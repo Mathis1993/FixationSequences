@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[24]:
 
 
 import torch
@@ -27,7 +27,14 @@ import matplotlib.pyplot as plt
 from EarlyStopping import EarlyStopping
 
 
-# In[2]:
+# In[25]:
+
+
+os.system("data_conversion.py 1")
+os.system("Clean_and_split_data.py 1")
+
+
+# In[26]:
 
 
 def create_datasets(batch_size):
@@ -61,22 +68,25 @@ def create_datasets(batch_size):
     return dataset_loader_train, dataset_loader_val, dataset_loader_test
 
 
-# In[3]:
+# In[27]:
 
 
 #if torch.cuda.is_available():
 #    device = torch.device("cuda")
 
 
-# In[4]:
+# In[28]:
 
 
 def mySigmoid(x, upper_bound):
     #scale output of sigmoid and add offset to avoid zero output
-    return torch.sigmoid(x) * upper_bound + torch.Tensor([10]).pow(-5)
+    offset = torch.Tensor([10]).pow(-5)
+    #push offset-tensor to gpu
+    #offset = offset.to('cuda')
+    return torch.sigmoid(x) * upper_bound + offset
 
 
-# In[5]:
+# In[29]:
 
 
 class TestNet(nn.Module):
@@ -117,11 +127,11 @@ class TestNet(nn.Module):
 #initilaize the NN
 model = TestNet()
 #push model to gpu
-model.cuda()
+#model.cuda()
 print(model)
 
 
-# In[6]:
+# In[30]:
 
 
 from visdom import Visdom
@@ -144,7 +154,7 @@ class VisdomLinePlotter(object):
             self.viz.line(X=np.array([x]), Y=np.array([y]), env=self.env, win=self.plots[var_name], name=split_name, update = 'append')
 
 
-# In[7]:
+# In[31]:
 
 
 if __name__ == "__main__":
@@ -153,13 +163,13 @@ if __name__ == "__main__":
     plotter = VisdomLinePlotter(env_name='main')
 
 
-# In[8]:
+# In[32]:
 
 
 optimizer = optim.SGD(model.parameters(), lr=0.00001)
 
 
-# In[9]:
+# In[33]:
 
 
 def train_model(model, batch_size, patience, n_epochs):
@@ -191,8 +201,8 @@ def train_model(model, batch_size, patience, n_epochs):
             # clear the gradients of all optimized variables
             optimizer.zero_grad()
             #push data and targets to gpu
-            data = data.to('cuda')
-            target = target.to('cuda')
+            #data = data.to('cuda')
+            #target = target.to('cuda')
             # forward pass: compute predicted outputs by passing inputs to the model
             output = model(data)
             #print("output size: {}".format(output.size()))
@@ -206,7 +216,8 @@ def train_model(model, batch_size, patience, n_epochs):
             train_losses.append(loss.item())
             print("On iteration {} loss is {:.3f}".format(i+1, loss.item()))
             iteration = i + 1
-            plotter.plot('loss', 'train', 'Training loss per Iteration', iteration, train_losses[-1])
+            #plot is always appending the newest value, so just give the last item if the list
+            plotter.plot('loss', 'train', 'Loss per Iteration', iteration, train_losses[-1])
             
 
         ######################    
@@ -218,6 +229,9 @@ def train_model(model, batch_size, patience, n_epochs):
             data = example["image"]
             #print("input sum: {}".format(torch.sum(data)))
             target = example["fixations"]
+            #push data and targets to gpu
+            #data = data.to('cuda')
+            #target = target.to('cuda')
             #print("target sum: {}".format(torch.sum(target)))
             # forward pass: compute predicted outputs by passing inputs to the model
             output = model(data)
@@ -226,7 +240,7 @@ def train_model(model, batch_size, patience, n_epochs):
             loss = myLoss(output, target)
             # record validation loss
             valid_losses.append(loss.item())
-            
+            plotter.plot('loss', 'val', 'Loss per Iteration', iteration, valid_losses[-1])
 
         # print training/validation statistics 
         # calculate average loss over an epoch
@@ -242,6 +256,10 @@ def train_model(model, batch_size, patience, n_epochs):
                      'valid_loss: {:.5f}'.format(valid_loss))
         
         print(print_msg)
+        
+        #plot average loss for this epoch
+        plotter.plot('loss', 'train', 'Loss per Epoch', epoch, train_loss)
+        plotter.plot('loss', 'val', 'Loss per Epoch', epoch, valid_loss)
         
         # clear lists to track next epoch
         train_losses = []
@@ -264,7 +282,7 @@ def train_model(model, batch_size, patience, n_epochs):
 # In[10]:
 
 
-batch_size = 16
+batch_size = 4
 n_epochs = 10
 
 train_loader, test_loader, valid_loader = create_datasets(batch_size)
