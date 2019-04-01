@@ -86,7 +86,7 @@ def create_datasets(batch_size):
 #set global boolean gpu value, so that everything will run on the gpu (if True) or cpu (if false)
 if __name__ == "__main__":
     global gpu
-    gpu = False
+    gpu = True
 
 
 # In[27]:
@@ -97,12 +97,12 @@ class TestNet(nn.Module):
     def __init__(self, gpu=False):
         super(TestNet, self).__init__()
         #3 input image channels (color-images), 64 output channels, 3x3 square convolution kernel
-        self.conv1 = nn.Conv2d(3, 64, 3)
+        #padding to keep dimensions of output at 100x100
+        self.conv1 = nn.Conv2d(3, 64, 3, stride=1, padding=1)
         self.conv1_bn = nn.BatchNorm2d(64)
-        self.conv2 = nn.Conv2d(64, 128, 3)
+        self.conv2 = nn.Conv2d(64, 128, 3, stride=1, padding=1)
         self.conv2_bn = nn.BatchNorm2d(128)
-        self.conv3 = nn.Conv2d(128, 1, 3)
-        self.pool1 = nn.AdaptiveAvgPool2d((100,100))
+        self.conv3 = nn.Conv2d(128, 1, 3, stride=1, padding=1)
         #scale parameter for the sigmoid function
         self.upper_bound = nn.Parameter(torch.Tensor([1]))
         #make it considered by autograd
@@ -127,16 +127,11 @@ class TestNet(nn.Module):
         #(ln is not defined for negative values), so make sure that the scaling parameter is positive
         x = mySigmoid(self.conv3(x), abs(self.upper_bound), gpu)
         #print("input sum after last conv and sigmoid: {}".format(torch.sum(x)))
-        x = self.pool1(x)
-        #print("input sum after pooling: {}".format(torch.sum(x)))
         
         return x
 
 #initilaize the NN
 model = TestNet(gpu)
-
-#push model to gpu
-#model.cuda()
 
 print(model)
 #print(torch.cuda.current_device())
@@ -152,10 +147,10 @@ print(model)
 if __name__ == "__main__":
 
     global plotter_train
-    plotter_train = VisdomLinePlotter(env_name='training', server="http://130.63.188.108", port=12345)
+    plotter_train = VisdomLinePlotter(env_name='training', server="http://130.63.188.108", port=9876)
     
     global plotter_val
-    plotter_val = VisdomLinePlotter(env_name='validation', server="http://130.63.188.108", port=12345)
+    plotter_val = VisdomLinePlotter(env_name='validation', server="http://130.63.188.108", port=9876)
 
 
 # In[29]:
