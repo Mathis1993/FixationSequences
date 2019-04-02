@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+#######################################################################################
+#Call with arguments batch_size (int), n_epochs (int) and gpu (bool) from command line#
+#######################################################################################
+
 # In[11]:
 
 
@@ -17,6 +21,7 @@ import os
 from skimage import io, transform
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 #Dataset and Transforms
 from utils.Dataset_And_Transforms import FigrimFillersDataset, Downsampling, ToTensor, ExpandTargets
@@ -85,8 +90,16 @@ def create_datasets(batch_size):
 
 #set global boolean gpu value, so that everything will run on the gpu (if True) or cpu (if false)
 if __name__ == "__main__":
+    
+    global batch_size
+    batch_size = int(sys.argv[1])
+    
+    global n_epochs
+    n_epochs = int(sys.argv[2])
+    
     global gpu
-    gpu = True
+    gpu = bool(sys.argv[3])
+    #gpu = True
 
 
 # In[27]:
@@ -282,8 +295,8 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
 
 
 #call the training/validation loop
-batch_size = 32
-n_epochs = 10
+batch_size #= 32
+n_epochs #= 10
 
 train_loader, val_loader, test_loader = create_datasets(batch_size)
 
