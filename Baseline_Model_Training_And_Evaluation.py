@@ -330,7 +330,7 @@ plt.axvline(minposs, linestyle='--', color='r',label='Early Stopping Checkpoint'
 
 plt.xlabel('epochs')
 plt.ylabel('loss')
-plt.ylim(0, 0.5) # consistent scale
+#plt.ylim(0, 0.5) # consistent scale
 plt.xlim(0, len(train_loss)+1) # consistent scale
 plt.grid(True)
 plt.legend()
@@ -377,7 +377,7 @@ for i, example in enumerate(test_loader, 0): #start at index 0
             for batch_idx in range(output.size()[0]):
                 output_subset = output[batch_idx]
                 target_subset = target[batch_idx]
-                acc_this_image, _ = accuracy(output_subset, target_subset)
+                acc_this_image, _ = accuracy(output_subset, target_subset, gpu)
                 acc_per_image.append(acc_this_image)
                 acc_this_batch += acc_this_image
             #divide by batch size
@@ -390,10 +390,13 @@ print("Mean accuracy for test set ist: {}".format(np.mean(acc_per_image)))
 
 # In[9]:
 
-
+#print value of sigmoid scaling parameter (it's the first one, so stop after one iteration)
+k = 0
 for name, param in model.named_parameters():
     if param.requires_grad:
         print(name, param.data)
+        if k == 0:
+            break
 
-print(list(model.parameters()))
+#print(list(model.parameters()))
 

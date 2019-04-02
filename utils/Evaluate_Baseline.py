@@ -12,7 +12,7 @@ import numpy as np
 
 
 #find indices of these values in unflattend activation-tensor
-def map_idx(tensor_unfl, idx_fl):
+def map_idx(tensor_unfl, idx_fl, gpu):
     """
     Takes unflattened 2D-tensor and index of the same flattened 2D-tensor and returns the corresponding index
     of the unflattened tensor.
@@ -22,13 +22,17 @@ def map_idx(tensor_unfl, idx_fl):
     n_cols = tensor_unfl.size()[-1]
     row_idx_unfl = idx_fl // n_cols
     col_idx_unfl = idx_fl % n_cols
-    return (torch.tensor([row_idx_unfl, col_idx_unfl]))
+    result = torch.tensor([row_idx_unfl, col_idx_unfl])
+    if gpu:
+        if torch.cuda.is_available():
+            result = result.to('cuda')
+    return result
 
 
 # In[3]:
 
 
-def accuracy(activations, fixations):
+def accuracy(activations, fixations, gpu):
     """
     Calculates the accuracy for one image's activations and its corresponding fixation sequence.
     
@@ -60,14 +64,15 @@ def accuracy(activations, fixations):
 
     idx_unfl = []
     for idx_fl in lar_val_idx:
-        idx_unfl.append(map_idx(activations, idx_fl.item()))
+        idx_unfl.append(map_idx(activations, idx_fl.item(), gpu))
 
     #see if they match with fixations indices
     hits = 0
     #does each fixation lead to one of the x biggest activation values?
     for fix in range(num_fix):
         for idx in idx_unfl:
-            hits += torch.all(torch.eq(idx,fixations[fix])).item()
+            current = torch.all(torch.eq(idx,fixations[fix]))
+            hits += current.item()
 
     #calcualte proportion of hits
     acc = hits / num_fix
