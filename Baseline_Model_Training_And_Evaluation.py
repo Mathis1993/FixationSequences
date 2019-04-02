@@ -282,10 +282,10 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
 
 
 #call the training/validation loop
-batch_size = 4
+batch_size = 32
 n_epochs = 10
 
-train_loader, valid_loader, test_loader = create_datasets(batch_size)
+train_loader, val_loader, test_loader = create_datasets(batch_size)
 
 # early stopping patience; how long to wait after last time validation loss improved.
 patience = 20
@@ -297,6 +297,10 @@ model, train_loss, valid_loss = train_model(model, batch_size, patience, n_epoch
 
 
 # visualize the loss as the network trained
+
+#turn interactive mode off, because plot cannot be displayed in console
+plt.ioff()
+
 fig = plt.figure(figsize=(10,8))
 plt.plot(range(1,len(train_loss)+1),train_loss, label='Training Loss')
 plt.plot(range(1,len(valid_loss)+1),valid_loss,label='Validation Loss')
@@ -311,8 +315,9 @@ plt.ylim(0, 0.5) # consistent scale
 plt.xlim(0, len(train_loss)+1) # consistent scale
 plt.grid(True)
 plt.legend()
+plt.title("Training and Validation Loss per Epoch", fontsize=20)
 plt.tight_layout()
-plt.show()
+#plt.show() #no showing, only saving
 fig.savefig('loss_plot.png', bbox_inches='tight')
 
 
@@ -330,7 +335,7 @@ acc_per_batch = []
 # evaluate the model #
 ######################
 model.eval() # prep model for evaluation
-for i, example in enumerate(train_loader, 0): #start at index 0
+for i, example in enumerate(test_loader, 0): #start at index 0
             # get the inputs
             data = example["image"]
             #print("input sum: {}".format(torch.sum(data)))
