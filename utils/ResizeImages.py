@@ -1,3 +1,7 @@
+import os
+#pip install pillow to use PIL
+from PIL import Image
+
 def resizeImage(infile, infile_name_only, output_dir="", size=(1024,768)):
   '''
   Resize Images to a requestet size (not considerinng aspect ratio)
@@ -12,12 +16,13 @@ def resizeImage(infile, infile_name_only, output_dir="", size=(1024,768)):
   extension = os.path.splitext(infile)[1]
   
   if infile != outfile:
-    if not os.path.isfile(output_dir + "/" + outfile + extension):
+    #if not os.path.isfile(output_dir + "/" + outfile + extension):
       try :
-        im = PIL.Image.open(infile)
+        im = Image.open(infile)
         #crops to requested size independt from aspec ratio
-        im = im.resize(size, PIL.Image.ANTIALIAS) 
-        im.save(output_dir + "/" + outfile + extension)
+        im = im.resize(size, Image.ANTIALIAS) 
+        #im.save(output_dir + "/" + outfile + extension)
+        im.save(output_dir)
       except IOError:
         print("cannot reduce image for ", infile)
 
