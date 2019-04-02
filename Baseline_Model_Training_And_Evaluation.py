@@ -20,8 +20,14 @@ import math
 import os
 from skimage import io, transform
 import numpy as np
-import matplotlib.pyplot as plt
 import sys
+
+#import exactly in this way to make sure that matplotlib can generate
+#a plot without being connected to a display 
+#(otherwise _tkinter.TclError: couldn't connect to display localhost:10.0)
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 
 #Dataset and Transforms
 from utils.Dataset_And_Transforms import FigrimFillersDataset, Downsampling, ToTensor, ExpandTargets
