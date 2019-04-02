@@ -169,7 +169,7 @@ if __name__ == "__main__":
     plotter_train = VisdomLinePlotter(env_name='training', server="http://130.63.188.108", port=9876)
     
     global plotter_val
-    plotter_val = VisdomLinePlotter(env_name='validation', server="http://130.63.188.108", port=9876)
+    plotter_eval = VisdomLinePlotter(env_name='evaluation', server="http://130.63.188.108", port=9876)
 
 
 # In[29]:
@@ -229,9 +229,11 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
             # record training loss
             train_losses.append(loss.item())
             print("On iteration {} loss is {:.3f}".format(i+1, loss.item()))
+            #for the first epoch, plot loss per iteration to have a quick overview of the early training phase
             iteration = i + 1
             #plot is always appending the newest value, so just give the last item if the list
-            plotter_train.plot('loss', 'train', 'Loss per Iteration', iteration, train_losses[-1])
+            if epoch == 1:
+                plotter_train.plot('loss', 'train', 'Loss per Iteration', iteration, train_losses[-1])
             
 
         ######################    
@@ -258,7 +260,7 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
             loss = myLoss(output, target)
             # record validation loss
             valid_losses.append(loss.item())
-            plotter_val.plot('loss', 'val', 'Loss per Iteration', iteration, valid_losses[-1])
+            #plotter_val.plot('loss', 'val', 'Loss per Iteration', iteration, valid_losses[-1])
 
         # print training/validation statistics 
         # calculate average loss over an epoch
@@ -267,7 +269,7 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
         
-        epoch_len = len(str(n_epochs))
+        epoch_len = str(n_epochs)
         
         print_msg = ('[{}/{}] '.format(epoch, epoch_len) +
                      'train_loss: {:.5f} '.format(train_loss) +
@@ -276,8 +278,8 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
         print(print_msg)
         
         #plot average loss for this epoch
-        plotter_train.plot('loss', 'train', 'Loss per Epoch', epoch, train_loss)
-        plotter_val.plot('loss', 'val', 'Loss per Epoch', epoch, valid_loss)
+        plotter_eval.plot('loss', 'train', 'Loss per Epoch', epoch, train_loss)
+        plotter_eval.plot('loss', 'val', 'Loss per Epoch', epoch, valid_loss)
         
         # clear lists to track next epoch
         train_losses = []
