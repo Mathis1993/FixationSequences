@@ -182,6 +182,8 @@ def convert_data():
     #put everything into one dataframe containing filename, category, impath and userdata
     daten = {"filename":filename, "category":category, "impath":impath, "userdata":userdata}
     allImages = pd.DataFrame(data=daten, columns = ["filename", "category", "impath", "userdata"])
+    #save that dataframe to .csv
+    allImages.to_json("allImages.json", orient="split")
     allImages
     allImages.loc[0,"userdata"]
 
