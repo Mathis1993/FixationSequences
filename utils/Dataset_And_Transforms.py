@@ -57,6 +57,8 @@ class Downsampling(object):
         
         #downsampling (eg activations (100,100) and original image size (1000,1000): by a factor of 10)
         fixations = fixations / self.factor
+        #make sure fixations are of type float
+        fixations = fixations.float()
         #rounding
         fixations = torch.floor(fixations)
         #conversion to long for usage as indices
