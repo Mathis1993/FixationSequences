@@ -21,13 +21,13 @@ class EarlyStopping:
         self.early_stop = False
         self.val_loss_min = np.Inf
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_loss, model, batch_size, lr):
 
         score = -val_loss
 
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(val_loss, model)
+            self.save_checkpoint(val_loss, model, batch_size, lr)
         elif score < self.best_score:
             self.counter += 1
             #f-strings only available from python 3.6 onwards
@@ -37,13 +37,14 @@ class EarlyStopping:
                 self.early_stop = True
         else:
             self.best_score = score
-            self.save_checkpoint(val_loss, model)
+            self.save_checkpoint(val_loss, model, batch_size, lr)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model):
+    def save_checkpoint(self, val_loss, model, batch_size, lr):
         '''Saves model when validation loss decrease.'''
         if self.verbose:
             #print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
             print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(self.val_loss_min, val_loss))
-        torch.save(model.state_dict(), 'checkpoint.pt')
+        name = "checkpoint_batch_size_{}_lr_{}.pt".format(batch_size, lr)
+        torch.save(model.state_dict(), name)
         self.val_loss_min = val_loss
