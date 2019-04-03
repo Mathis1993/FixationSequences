@@ -1,6 +1,29 @@
 #!/usr/bin/env python
-# coding: utf-8
 
+"""
+Train and Evaluate Baseline Model.
+
+Usage: Baseline_Model_Training_And_Evaluation.py <batch_size> <lr> <n_epochs> <gpu>
+
+Arguments:
+1. batch_size (int): Size of the batches used for training, validating and testing the network.
+2. lr (float): Learning rate used in SGD.
+3. n_epochs (int): Amount of iterations over the training/validation dataset.
+4. gpu (bool): If to run on GPU (if available).
+
+Examples:
+Baseline_Model_Training_And_Evaluation.py 32 0.0001 20 True
+
+"""
+
+from docopt import docopt
+from pprint import pprint
+
+if __name__ == '__main__':
+    arguments = docopt(__doc__, version='FIXME')
+    pprint(arguments)
+
+# coding: utf-8
 
 ###################################################################################################
 #Call with arguments batch_size (int), lr (float), n_epochs (int) and gpu (bool) from command line#
