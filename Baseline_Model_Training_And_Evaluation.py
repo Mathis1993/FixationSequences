@@ -229,7 +229,7 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
             iteration = i + 1
             #plot is always appending the newest value, so just give the last item if the list
             if epoch == 1:
-                plotter_train.plot('loss', 'train', 'Loss per Iteration', iteration, train_losses[-1])
+                plotter_train.plot('loss', 'train', 'Loss per Iteration', iteration, train_losses[-1], batch_size, lr)
             
 
         ######################    
@@ -274,8 +274,8 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
         print(print_msg)
         
         #plot average loss for this epoch
-        plotter_eval.plot('loss', 'train', 'Loss per Epoch', epoch, train_loss)
-        plotter_eval.plot('loss', 'val', 'Loss per Epoch', epoch, valid_loss)
+        plotter_eval.plot('loss', 'train', 'Loss per Epoch', epoch, train_loss, batch_size, lr)
+        plotter_eval.plot('loss', 'val', 'Loss per Epoch', epoch, valid_loss, batch_size, lr)
         
         # clear lists to track next epoch
         train_losses = []
@@ -298,8 +298,8 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
 # In[31]:
 
 #define hyperparameter values
-batch_sizes = [32, 64, 128, 256]
-lrs = [0.0000001, 0.000001, 0.00001, 0.0001]
+batch_sizes = [32]#[32, 64, 128, 256]
+lrs = [0.0001, 0.001]#[0.0000001, 0.000001, 0.00001, 0.0001]
 
 #df to store the results
 results = pd.DataFrame(columns = ["batch_size", "learning_rate", "mean_accuracy_per_image", "mean_test_loss", "mean_validation_loss", "mean_train_loss", "best_model"])
@@ -339,7 +339,7 @@ for batch_size in batch_sizes:
 
         # find position of lowest validation loss
         minposs = valid_loss.index(min(valid_loss))+1 
-        plt.axvline(minposs, linestyle='--', color='r',label='Early Stopping Checkpoint')
+        plt.axvline(minposs, linestyle='--', color='r',label='Lowest Validation Loss')
 
         plt.xlabel('epochs')
         plt.ylabel('loss')
@@ -350,7 +350,8 @@ for batch_size in batch_sizes:
         plt.title("Training and Validation Loss per Epoch", fontsize=20)
         plt.tight_layout()
         #plt.show() #no showing, only saving
-        fig.savefig('loss_plot.png', bbox_inches='tight')
+        name = "loss_plot_batch_size_{}_lr_{}.png".format(batch_size, lr)
+        fig.savefig(name, bbox_inches='tight')
 
 
         # In[ ]:
