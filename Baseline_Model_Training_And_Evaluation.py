@@ -208,7 +208,8 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
         # train the model #
         ###################
         model.train() # prep model for training
-        for i, example in enumerate(train_loader, 0): #start at index 0
+        t = tqdm(iter(train_loader), desc="[Train on Epoch {}/{}]".format(epoch, n_epochs))
+        for i, example in enumerate(t): #start at index 0
             # get the inputs
             data = example["image"]
             #print("data size: {}".format(data.size()))
@@ -234,19 +235,20 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
             optimizer.step()
             # record training loss
             train_losses.append(loss.item())
-            print("On iteration {} loss is {:.3f}".format(i+1, loss.item()))
+            #print("On iteration {} loss is {:.3f}".format(i+1, loss.item()))
             #for the first epoch, plot loss per iteration to have a quick overview of the early training phase
             iteration = i + 1
             #plot is always appending the newest value, so just give the last item if the list
             if epoch == 1:
-                plotter_train.plot('loss', 'train', 'Loss per Iteration', iteration, train_losses[-1], batch_size, lr)
+                plotter_train.plot('loss', 'train', 'Loss per Iteration', iteration, train_losses[-1], batch_size, lr, 'iteration')
             
 
         ######################    
         # validate the model #
         ######################
         model.eval() # prep model for evaluation
-        for i, example in enumerate(val_loader, 0): #start at index 0
+        t = tqdm(iter(val_loader), desc="[Valid on Epoch {}/{}]".format(epoch, n_epochs))
+        for i, example in enumerate(t):
             # get the inputs
             data = example["image"]
             #print("input sum: {}".format(torch.sum(data)))
@@ -284,8 +286,8 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
         print(print_msg)
         
         #plot average loss for this epoch
-        plotter_eval.plot('loss', 'train', 'Loss per Epoch', epoch, train_loss, batch_size, lr)
-        plotter_eval.plot('loss', 'val', 'Loss per Epoch', epoch, valid_loss, batch_size, lr)
+        plotter_eval.plot('loss', 'train', 'Loss per Epoch', epoch, train_loss, batch_size, lr, 'epoch')
+        plotter_eval.plot('loss', 'val', 'Loss per Epoch', epoch, valid_loss, batch_size, lr, 'epoch')
         
         # clear lists to track next epoch
         train_losses = []
@@ -321,7 +323,7 @@ n_epochs #= 10
 train_loader, val_loader, test_loader = create_datasets(batch_size)
 
 # early stopping patience; how long to wait after last time validation loss improved.
-patience = 20
+patience = 5
 
 model, train_loss, valid_loss = train_model(model, batch_size, patience, n_epochs, gpu)
 
@@ -369,7 +371,8 @@ acc_per_batch = []
 # evaluate the model #
 ######################
 model.eval() # prep model for evaluation
-for i, example in enumerate(test_loader, 0): #start at index 0
+t = tqdm(iter(test_loader), desc="Evaluating Model")
+for i, example in enumerate(t): #start at index 0
             # get the inputs
             data = example["image"]
             #print("input sum: {}".format(torch.sum(data)))
@@ -400,6 +403,7 @@ for i, example in enumerate(test_loader, 0): #start at index 0
             acc_per_batch.append(acc_this_batch)
 
 acc_per_image = np.asarray(acc_per_image)
+print("Mean test loss is: {}".format(np.average(test_losses)))
 print("Mean accuracy for test set ist: {}".format(np.mean(acc_per_image)))
 
 
