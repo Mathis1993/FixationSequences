@@ -22,6 +22,8 @@ import os
 from skimage import io, transform
 import numpy as np
 import sys
+#status bar
+from tqdm import tqdm
 
 #import exactly in this way to make sure that matplotlib can generate
 #a plot without being connected to a display 
@@ -78,16 +80,17 @@ def create_datasets(batch_size):
                                          transform=data_transform)
     
     #create data loaders
+    #set number of threads to 8 so that 8 processes will transfer 1 batch to the gpu in parallel
     dataset_loader_train = torch.utils.data.DataLoader(figrim_dataset_train, batch_size=batch_size, 
-                                             shuffle=True, num_workers=0)
+                                             shuffle=True, num_workers=8)
 
     dataset_loader_val = torch.utils.data.DataLoader(figrim_dataset_val, batch_size=batch_size, 
-                                                 shuffle=True, num_workers=0)
+                                                 shuffle=True, num_workers=8)
     
     
     #no shuffling, as to be able to identify which images were processed well/not so well
     dataset_loader_test = torch.utils.data.DataLoader(figrim_dataset_test, batch_size=batch_size, 
-                                                 shuffle=False, num_workers=0)
+                                                 shuffle=False, num_workers=8)
     
     return dataset_loader_train, dataset_loader_val, dataset_loader_test
 
