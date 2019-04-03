@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-#######################################################################################
-#Call with arguments batch_size (int), n_epochs (int) and gpu (bool) from command line#
-#######################################################################################
+###################################################################################################
+#Call with arguments batch_size (int), lr (float), n_epochs (int) and gpu (bool) from command line#
+###################################################################################################
 
 # In[11]:
 
@@ -100,11 +100,14 @@ if __name__ == "__main__":
     global batch_size
     batch_size = int(sys.argv[1])
     
+    global lr
+    lr = float(sys.argv[2])
+    
     global n_epochs
-    n_epochs = int(sys.argv[2])
+    n_epochs = int(sys.argv[3])
     
     global gpu
-    gpu = bool(sys.argv[3])
+    gpu = bool(sys.argv[4])
     #gpu = True
 
 
@@ -176,7 +179,7 @@ if __name__ == "__main__":
 
 
 #optimizer with learning rate
-optimizer = optim.SGD(model.parameters(), lr=0.00001)
+optimizer = optim.SGD(model.parameters(), lr=lr)
 
 
 # In[30]:
@@ -233,7 +236,7 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
             iteration = i + 1
             #plot is always appending the newest value, so just give the last item if the list
             if epoch == 1:
-                plotter_train.plot('loss', 'train', 'Loss per Iteration', iteration, train_losses[-1])
+                plotter_train.plot('loss', 'train', 'Loss per Iteration', iteration, train_losses[-1], batch_size, lr)
             
 
         ######################    
@@ -278,8 +281,8 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
         print(print_msg)
         
         #plot average loss for this epoch
-        plotter_eval.plot('loss', 'train', 'Loss per Epoch', epoch, train_loss)
-        plotter_eval.plot('loss', 'val', 'Loss per Epoch', epoch, valid_loss)
+        plotter_eval.plot('loss', 'train', 'Loss per Epoch', epoch, train_loss, batch_size, lr)
+        plotter_eval.plot('loss', 'val', 'Loss per Epoch', epoch, valid_loss, batch_size, lr)
         
         # clear lists to track next epoch
         train_losses = []
@@ -287,17 +290,23 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
         
         # early_stopping needs the validation loss to check if it has decresed, 
         # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
+        early_stopping(valid_loss, model, batch_size, lr)
         
         if early_stopping.early_stop:
             print("Early stopping")
             break
         
     # load the last checkpoint with the best model
-    model.load_state_dict(torch.load('checkpoint.pt'))
+    name = "checkpoint_batch_size_{}_lr_{}.pt".format(batch_size, lr)
+    model.load_state_dict(torch.load(name))
 
     return  model, avg_train_losses, avg_valid_losses
 
+
+#load df to store results in
+results = pd.read_csv("results.csv")
+#create temporary df (its contents will be appended to "results.csv")
+results_cur = pd.DataFrame(columns = ["batch_size", "learning_rate", "mean_accuracy_per_image", "mean_test_loss", "mean_validation_loss", "mean_train_loss"])
 
 # In[31]:
 
@@ -328,7 +337,7 @@ plt.plot(range(1,len(valid_loss)+1),valid_loss,label='Validation Loss')
 
 # find position of lowest validation loss
 minposs = valid_loss.index(min(valid_loss))+1 
-plt.axvline(minposs, linestyle='--', color='r',label='Early Stopping Checkpoint')
+plt.axvline(minposs, linestyle='--', color='r',label='Lowest Validation Loss')
 
 plt.xlabel('epochs')
 plt.ylabel('loss')
@@ -339,7 +348,8 @@ plt.legend()
 plt.title("Training and Validation Loss per Epoch", fontsize=20)
 plt.tight_layout()
 #plt.show() #no showing, only saving
-fig.savefig('loss_plot.png', bbox_inches='tight')
+name = "loss_plot_batch_size_{}_lr_{}.png".format(batch_size, lr)
+fig.savefig(name, bbox_inches='tight')
 
 
 # In[ ]:
@@ -402,3 +412,16 @@ for name, param in model.named_parameters():
 
 #print(list(model.parameters()))
 
+#store all the information from this hyperparameter configuration
+results_cur.loc[0,"batch_size"] = batch_size
+results_cur.loc[0, "learning_rate"] = lr
+results_cur.loc[0, "mean_accuracy_per_image"] = np.mean(acc_per_image)
+results_cur.loc[0, "mean_test_loss"] = np.average(test_losses)
+results_cur.loc[0, "mean_validation_loss"] = np.average(valid_loss)
+results_cur.loc[0, "mean_train_loss"] = np.average(train_loss)
+
+#and append results_cur to results
+results = results.append(results_cur)
+
+#store results
+results.to_csv("results.csv", index=False, header=True)
