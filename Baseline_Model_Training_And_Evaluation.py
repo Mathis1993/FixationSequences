@@ -2,7 +2,7 @@
 # coding: utf-8
 
 #######################################################################################
-#Call with arguments batch_size (int), n_epochs (int) and gpu (bool) from command line#
+#Call with arguments n_epochs (int) and gpu (bool) from command line#
 #######################################################################################
 
 # In[11]:
@@ -97,14 +97,14 @@ def create_datasets(batch_size):
 #set global boolean gpu value, so that everything will run on the gpu (if True) or cpu (if false)
 if __name__ == "__main__":
     
-    global batch_size
-    batch_size = int(sys.argv[1])
+    #global batch_size     #different batch sizes are defined below
+    #batch_size = int(sys.argv[1])
     
     global n_epochs
-    n_epochs = int(sys.argv[2])
+    n_epochs = int(sys.argv[1])
     
     global gpu
-    gpu = bool(sys.argv[3])
+    gpu = bool(sys.argv[2])
     #gpu = True
 
 
@@ -173,10 +173,6 @@ if __name__ == "__main__":
 
 
 # In[29]:
-
-
-#optimizer with learning rate
-optimizer = optim.SGD(model.parameters(), lr=0.00001)
 
 
 # In[30]:
@@ -301,104 +297,158 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
 
 # In[31]:
 
+#define hyperparameter values
+batch_sizes = [32, 64, 128, 256]
+lrs = [0.0000001, 0.000001, 0.00001, 0.0001]
 
-#call the training/validation loop
-batch_size #= 32
-n_epochs #= 10
+#df to store the results
+results = pd.DataFrame(columns = ["batch_size", "learning_rate", "mean_accuracy_per_image", "mean_test_loss", "mean_validation_loss", "mean_train_loss", "best_model"])
 
-train_loader, val_loader, test_loader = create_datasets(batch_size)
-
-# early stopping patience; how long to wait after last time validation loss improved.
-patience = 20
-
-model, train_loss, valid_loss = train_model(model, batch_size, patience, n_epochs, gpu)
-
-
-# In[ ]:
-
-
-# visualize the loss as the network trained
-
-#turn interactive mode off, because plot cannot be displayed in console
-plt.ioff()
-
-fig = plt.figure(figsize=(10,8))
-plt.plot(range(1,len(train_loss)+1),train_loss, label='Training Loss')
-plt.plot(range(1,len(valid_loss)+1),valid_loss,label='Validation Loss')
-
-# find position of lowest validation loss
-minposs = valid_loss.index(min(valid_loss))+1 
-plt.axvline(minposs, linestyle='--', color='r',label='Early Stopping Checkpoint')
-
-plt.xlabel('epochs')
-plt.ylabel('loss')
-#plt.ylim(0, 0.5) # consistent scale
-plt.xlim(0, len(train_loss)+1) # consistent scale
-plt.grid(True)
-plt.legend()
-plt.title("Training and Validation Loss per Epoch", fontsize=20)
-plt.tight_layout()
-#plt.show() #no showing, only saving
-fig.savefig('loss_plot.png', bbox_inches='tight')
-
-
-# In[ ]:
-
-
-#evaluate the model
-# to track the training loss as the model trains
-test_losses = []
-#to track the accuracy 
-acc_per_image = []
-acc_per_batch = []
-
-######################    
-# evaluate the model #
-######################
-model.eval() # prep model for evaluation
-for i, example in enumerate(test_loader, 0): #start at index 0
-            # get the inputs
-            data = example["image"]
-            #print("input sum: {}".format(torch.sum(data)))
-            target = example["fixations"]
-            
-            #push data and targets to gpu
-            if gpu:
-                if torch.cuda.is_available():
-                    data = data.to('cuda')
-                    target = target.to('cuda')
-            
-            # forward pass: compute predicted outputs by passing inputs to the model
-            output = model(data)
-            # calculate the loss
-            loss = myLoss(output, target)
-            # record training loss
-            test_losses.append(loss.item())
-            #accuracy
-            acc_this_batch = 0
-            for batch_idx in range(output.size()[0]):
-                output_subset = output[batch_idx]
-                target_subset = target[batch_idx]
-                acc_this_image, _ = accuracy(output_subset, target_subset, gpu)
-                acc_per_image.append(acc_this_image)
-                acc_this_batch += acc_this_image
-            #divide by batch size
-            acc_this_batch /= output.size()[0]
-            acc_per_batch.append(acc_this_batch)
-
-acc_per_image = np.asarray(acc_per_image)
-print("Mean accuracy for test set ist: {}".format(np.mean(acc_per_image)))
-
-
-# In[9]:
-
-#print value of sigmoid scaling parameter (it's the first one, so stop after one iteration)
+#index
 k = 0
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        print(name, param.data)
-        if k == 0:
-            break
 
-#print(list(model.parameters()))
+for batch_size in batch_sizes:
+    for lr in lrs:
+        
+        #optimizer with learning rate
+        optimizer = optim.SGD(model.parameters(), lr=lr)
+        
+        #call the training/validation loop
+        batch_size #= 32
+        n_epochs #= 10
+
+        train_loader, val_loader, test_loader = create_datasets(batch_size)
+
+        # early stopping patience; how long to wait after last time validation loss improved.
+        patience = 20
+
+        model, train_loss, valid_loss = train_model(model, batch_size, patience, n_epochs, gpu)
+
+
+        # In[ ]:
+
+
+        # visualize the loss as the network trained
+
+        #turn interactive mode off, because plot cannot be displayed in console
+        plt.ioff()
+
+        fig = plt.figure(figsize=(10,8))
+        plt.plot(range(1,len(train_loss)+1),train_loss, label='Training Loss')
+        plt.plot(range(1,len(valid_loss)+1),valid_loss,label='Validation Loss')
+
+        # find position of lowest validation loss
+        minposs = valid_loss.index(min(valid_loss))+1 
+        plt.axvline(minposs, linestyle='--', color='r',label='Early Stopping Checkpoint')
+
+        plt.xlabel('epochs')
+        plt.ylabel('loss')
+        #plt.ylim(0, 0.5) # consistent scale
+        plt.xlim(0, len(train_loss)+1) # consistent scale
+        plt.grid(True)
+        plt.legend()
+        plt.title("Training and Validation Loss per Epoch", fontsize=20)
+        plt.tight_layout()
+        #plt.show() #no showing, only saving
+        fig.savefig('loss_plot.png', bbox_inches='tight')
+
+
+        # In[ ]:
+
+
+        #evaluate the model
+        # to track the training loss as the model trains
+        test_losses = []
+        #to track the accuracy 
+        acc_per_image = []
+        acc_per_batch = []
+
+        ######################    
+        # evaluate the model #
+        ######################
+        model.eval() # prep model for evaluation
+        for i, example in enumerate(test_loader, 0): #start at index 0
+                    # get the inputs
+                    data = example["image"]
+                    #print("input sum: {}".format(torch.sum(data)))
+                    target = example["fixations"]
+
+                    #push data and targets to gpu
+                    if gpu:
+                        if torch.cuda.is_available():
+                            data = data.to('cuda')
+                            target = target.to('cuda')
+
+                    # forward pass: compute predicted outputs by passing inputs to the model
+                    output = model(data)
+                    # calculate the loss
+                    loss = myLoss(output, target)
+                    # record training loss
+                    test_losses.append(loss.item())
+                    #accuracy
+                    acc_this_batch = 0
+                    for batch_idx in range(output.size()[0]):
+                        output_subset = output[batch_idx]
+                        target_subset = target[batch_idx]
+                        acc_this_image, _ = accuracy(output_subset, target_subset, gpu)
+                        acc_per_image.append(acc_this_image)
+                        acc_this_batch += acc_this_image
+                    #divide by batch size
+                    acc_this_batch /= output.size()[0]
+                    acc_per_batch.append(acc_this_batch)
+
+        acc_per_image = np.asarray(acc_per_image)
+        print("Mean accuracy for test set ist: {}".format(np.mean(acc_per_image)))
+
+
+        # In[9]:
+
+        #print value of sigmoid scaling parameter (it's the first one, so stop after one iteration)
+        l = 0
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                print(name, param.data)
+                if l == 0:
+                    break
+
+        #print(list(model.parameters()))
+        
+        #better than the best model before?
+        cur_mean_test_loss = np.average(test_losses)
+        
+        #if the test loss of this model is lower than of those before, store the model
+        if k == 0:
+            print("New best model!")
+            best_model = 1
+            best_test_loss_so_far = cur_mean_test_loss
+            print("Saving model.")
+            torch.save(model.state_dict(), "best_model.pt")
+        elif cur_mean_test_loss < best_test_loss_so_far:
+            print("New best model!")
+            best_model = 1
+            best_test_loss_so_far = cur_mean_test_loss
+            print("Saving model.")
+            torch.save(model.state_dict(), "best_model.pt")
+        else:
+            best_model = 0
+            print("Worse than before.")
+       
+        #store all the information from this hyperparameter configuration
+        results.loc[k,"batch_size"] = batch_size
+        results.loc[k, "learning_rate"] = lr
+        results.loc[k, "mean_accuracy_per_image"] = np.mean(acc_per_image)
+        results.loc[k, "mean_test_loss"] = cur_mean_test_loss
+        results.loc[k, "mean_validation_loss"] = np.average(valid_loss)
+        results.loc[k, "mean_train_loss"] = np.average(train_loss)
+        results.loc[k, "best_model"] = best_model
+        
+        #save df after each iteration (in case sth goes wrong later)
+        results.to_csv("results.csv", index=False, header=True)
+        
+        #increment index
+        k += 1
+        
+        #reset visdom plottes
+        plotter_train = VisdomLinePlotter(env_name='training', server="http://130.63.188.108", port=9876)
+        plotter_eval = VisdomLinePlotter(env_name='evaluation', server="http://130.63.188.108", port=9876)
 
