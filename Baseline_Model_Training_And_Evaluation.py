@@ -96,6 +96,7 @@ def create_datasets(batch_size):
 
 
 #set global boolean gpu value, so that everything will run on the gpu (if True) or cpu (if false)
+if __name__ == "__main__":
     
     global batch_size
     batch_size = int(sys.argv[1])
