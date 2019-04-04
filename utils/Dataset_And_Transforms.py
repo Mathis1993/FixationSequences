@@ -115,7 +115,7 @@ class Targets2D(object):
     - Takes dim1 and dim2, the dimensions for the tensor to be outputted (should be the same as the model's feature map's
       dimensions)
     - Returns a tensor of eg (100,100) where each entry is 0, except for the locations that were fixated. There, the entries
-      are going to be 1
+      are going to be the number of fixations in this grid cell
     """
     def __init__(self, dim1, dim2):
         self.dim1 = dim1
@@ -127,8 +127,8 @@ class Targets2D(object):
         #create output tensor
         output = torch.zeros(self.dim1, self.dim2)
         
-        #change entries corresponding to fixation locations to 1
+        #change entries corresponding to fixation locations
         for i,j in fixations:
-            output[i,j] = 1
+            output[i,j] = output[i,j] + 1
         
         return {'image': image, 'fixations': output}
