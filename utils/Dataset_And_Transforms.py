@@ -117,9 +117,10 @@ class Targets2D(object):
     - Returns a tensor of eg (100,100) where each entry is 0, except for the locations that were fixated. There, the entries
       are going to be the number of fixations in this grid cell
     """
-    def __init__(self, dim1, dim2):
+    def __init__(self, dim1, dim2, pad_length):
         self.dim1 = dim1
         self.dim2 = dim2
+        self.pad_length = pad_length
         
     def __call__(self, sample):
         image, fixations = sample['image'], sample['fixations']
@@ -131,4 +132,17 @@ class Targets2D(object):
         for i,j in fixations:
             output[i,j] = output[i,j] + 1
         
-        return {'image': image, 'fixations': output}
+        #to carry easily accessible information about the fixated locations (grid cells)
+        #extract fixation locations as list
+        #locations = []
+        #fixations_l = fixations.tolist()
+        #for i in range(len(fixations)):
+        #    locations.append(tuple(fixations_l[i]))
+        
+        #to carry easily accessible information about the fixated locations (grid cells)
+        #data loader needs everything to be of the same dimensions, so expand fixations
+        pad_amount = self.pad_length - fixations.size()[0]
+        #what amount to pad left, right, upwards, downwards
+        fixations = functional.pad(fixations, (0,0,0,pad_amount), mode='constant', value=-1000)
+        
+        return {'image': image, 'fixations': output, 'fixation_locs': fixations}

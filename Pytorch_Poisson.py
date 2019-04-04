@@ -89,7 +89,7 @@ def create_datasets(batch_size):
     #transforms
     #downsampling by factor of 10 as the images were resized from (1000,1000) to (100,100),
     #so the fixations have to be, too
-    data_transform = transforms.Compose([ToTensor(),Downsampling(10), Targets2D(100,100)])
+    data_transform = transforms.Compose([ToTensor(),Downsampling(10), Targets2D(100,100, 100)])
     
     #load split data
     figrim_dataset_train = FigrimFillersDataset(json_file='allImages_unfolded_train.json',
@@ -116,7 +116,6 @@ def create_datasets(batch_size):
     #no shuffling, as to be able to identify which images were processed well/not so well
     dataset_loader_test = torch.utils.data.DataLoader(figrim_dataset_test, batch_size=batch_size, 
                                                  shuffle=False, num_workers=8)
-    print(torhc.sum(figrim_dataset_train[0]["fixations"]))
     
     return dataset_loader_train, dataset_loader_val, dataset_loader_test
 
@@ -243,6 +242,7 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
             data = example["image"]
             #print("data size: {}".format(data.size()))
             target = example["fixations"]
+            
             #print("target size: {}".format(target.size()))
             # clear the gradients of all optimized variables
             optimizer.zero_grad()
@@ -351,7 +351,7 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
 #load df to store results in
 results = pd.read_csv("results.csv")
 #create temporary df (its contents will be appended to "results.csv")
-results_cur = pd.DataFrame(columns = ["batch_size", "learning_rate", "mean_accuracy_per_image", "mean_test_loss", "mean_validation_loss", "mean_train_loss", "number_of_hits", "number_of_test_images"])
+results_cur = pd.DataFrame(columns = ["batch_size", "learning_rate", "mean_accuracy_per_image", "mean_test_loss", "mean_validation_loss", "mean_train_loss", "number_of_hits", "number_of_test_images", "number_of_fixations"])
 
 # In[31]:
 
@@ -408,6 +408,8 @@ acc_per_image = []
 acc_per_batch = []
 #track absolute hits
 hit_list = []
+#track number of fixations
+n_fixations = []
 
 ######################    
 # evaluate the model #
@@ -419,6 +421,7 @@ for i, example in enumerate(t): #start at index 0
             data = example["image"]
             #print("input sum: {}".format(torch.sum(data)))
             target = example["fixations"]
+            target_locs = example["fixation_locs"]
             
             #push data and targets to gpu
             if gpu:
@@ -442,9 +445,11 @@ for i, example in enumerate(t): #start at index 0
             for batch_idx in range(output.size()[0]):
                 output_subset = output[batch_idx]
                 target_subset = target[batch_idx]
-                acc_this_image, hits = accuracy(output_subset, target_subset, gpu)
+                target_locs_subset = target_locs[batch_idx]
+                acc_this_image, hits, num_fix = accuracy(output_subset, target_subset, target_locs_subset)
                 acc_per_image.append(acc_this_image)
                 hit_list.append(hits)
+                n_fixations.append(num_fix)
                 acc_this_batch += acc_this_image
             #divide by batch size
             acc_this_batch /= output.size()[0]
@@ -476,6 +481,7 @@ results_cur.loc[0, "mean_validation_loss"] = np.average(valid_loss)
 results_cur.loc[0, "mean_train_loss"] = np.average(train_loss)
 results_cur.loc[0, "number_of_hits"] = sum(hit_list)
 results_cur.loc[0, "number_of_test_images"] = len(acc_per_image)
+results_cur.loc[0, "number_of_fixations"] = sum(n_fixations)
  
 #and append results_cur to results
 results = results.append(results_cur)
