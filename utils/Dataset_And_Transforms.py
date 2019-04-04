@@ -106,3 +106,29 @@ class ExpandTargets(object):
         fixations = functional.pad(fixations, (0,0,0,pad_amount), mode='constant', value=-1000)
         
         return {'image': image, 'fixations': fixations}
+    
+    
+class Targets2D(object):
+    """
+    - Make Targets have the same size as the feature map the model outputs (eg (100,100)) so that both the model's
+      output and the targets can be fed to the Poisson-Loss provided by Pytorch
+    - Takes dim1 and dim2, the dimensions for the tensor to be outputted (should be the same as the model's feature map's
+      dimensions)
+    - Returns a tensor of eg (100,100) where each entry is 0, except for the locations that were fixated. There, the entries
+      are going to be 1
+    """
+    def __init__(self, dim1, dim2):
+        self.dim1 = dim1
+        self.dim2 = dim2
+        
+    def __call__(self, sample):
+        image, fixations = sample['image'], sample['fixations']
+        
+        #create output tensor
+        output = torch.zeros(self.dim1, self.dim2)
+        
+        #change entries corresponding to fixation locations to 1
+        for i,j in fixations:
+            output[i,j] = 1
+        
+        return {'image': image, 'fixations': output}
