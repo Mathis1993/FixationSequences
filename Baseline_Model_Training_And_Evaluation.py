@@ -334,7 +334,7 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
 #load df to store results in
 results = pd.read_csv("results.csv")
 #create temporary df (its contents will be appended to "results.csv")
-results_cur = pd.DataFrame(columns = ["batch_size", "learning_rate", "mean_accuracy_per_image", "mean_test_loss", "mean_validation_loss", "mean_train_loss"])
+results_cur = pd.DataFrame(columns = ["batch_size", "learning_rate", "mean_accuracy_per_image", "mean_test_loss", "mean_validation_loss", "mean_train_loss", "number_of_hits", "number_of_test_images", "number_of_fixations"])
 
 # In[31]:
 
@@ -389,6 +389,10 @@ test_losses = []
 #to track the accuracy 
 acc_per_image = []
 acc_per_batch = []
+#track absolute hits
+hit_list = []
+#absolute number of fixations
+n_fixations = []
 
 ######################    
 # evaluate the model #
@@ -418,13 +422,15 @@ for i, example in enumerate(t): #start at index 0
             for batch_idx in range(output.size()[0]):
                 output_subset = output[batch_idx]
                 target_subset = target[batch_idx]
-                acc_this_image, _ = accuracy(output_subset, target_subset, gpu)
+                acc_this_image, hits, num_fix = accuracy(output_subset, target_subset, gpu)
                 acc_per_image.append(acc_this_image)
+                hit_list.append(hits)
+                n_fixations.append(num_fix)
                 acc_this_batch += acc_this_image
             #divide by batch size
             acc_this_batch /= output.size()[0]
             acc_per_batch.append(acc_this_batch)
-
+                
 acc_per_image = np.asarray(acc_per_image)
 print("Mean test loss is: {}".format(np.average(test_losses)))
 print("Mean accuracy for test set ist: {}".format(np.mean(acc_per_image)))
@@ -449,7 +455,10 @@ results_cur.loc[0, "mean_accuracy_per_image"] = np.mean(acc_per_image)
 results_cur.loc[0, "mean_test_loss"] = np.average(test_losses)
 results_cur.loc[0, "mean_validation_loss"] = np.average(valid_loss)
 results_cur.loc[0, "mean_train_loss"] = np.average(train_loss)
-
+results_cur.loc[0, "number_of_hits"] = sum(hit_list)
+results_cur.loc[0, "number_of_test_images"] = len(acc_per_image)
+results_cur.loc[0, "number_of_fixations"] = sum(n_fixations)
+ 
 #and append results_cur to results
 results = results.append(results_cur)
 
