@@ -21,7 +21,7 @@ def myLoss(activations, fixations):
     
     #for each activation in the batch
     for batch_idx in range(activations.size()[0]):
-        loss = torch.sum(activations[batch_idx,:,:])
+        loss = torch.sum(activations[batch_idx,:,:,:])
         
         #the corresponding fixation
         for i,j in fixations[batch_idx]:
@@ -42,5 +42,17 @@ def myLoss(activations, fixations):
     #return loss summed over the whole mini-batch
     return torch.sum(result)
 
-def square(a):
-    return a*a
+
+def myLoss2(activations, fixations):
+    
+    #fixations have dimension (batch_size, x, y), so make sure that for the activations (batch_size, nC=1, x, y),
+    #the nC-dimension (that is 1) is dropped
+    activations = activations.view(activations.size()[0], activations.size()[-1], activations.size()[-2])
+    
+    #offset, to be able to handle activations values that are 0
+    eps = 1e-8
+    
+    loss = activations - fixations * torch.log(activations + eps)
+    
+    return torch.sum(loss)
+    

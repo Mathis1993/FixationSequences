@@ -32,7 +32,7 @@ def map_idx(tensor_unfl, idx_fl):
 # In[3]:
 
 
-def accuracy(activations, fixations, fixation_locs):
+def accuracy(activations, fixations, fixation_locs, gpu):
     """
     Calculates the accuracy for one image's activations and its corresponding fixation sequence.
     
@@ -109,13 +109,24 @@ def accuracy(activations, fixations, fixation_locs):
     #print("Indices of biggest activations: {}".format(idx_unfl))
     
     #does each fixation lead to one of the x biggest activation values?
-    for fix in locations:
-        for idx in idx_unfl:
+    biggest_activation_locs = torch.zeros(activations.size())
+    
+    for idx in idx_unfl:
+        biggest_activation_locs[idx] = 1
+    
+    if gpu:
+        if torch.cuda.is_available():
+            biggest_activation_locs = biggest_activation_locs.to('cuda')
+    
+    hits = int(torch.sum(biggest_activation_locs * fixations).item())
+    
+    #for fix in locations:
+    #    for idx in idx_unfl:
             #convert the tensor holding the fixation value to 
             #current = torch.all(torch.eq(idx, fixations[fix].long()))
             #hits += current.item()
-            if fix == idx:
-                hits += 1
+    #        if fix == idx:
+    #            hits += 1
     
     #calcualte proportion of hits
     acc = hits / num_fix

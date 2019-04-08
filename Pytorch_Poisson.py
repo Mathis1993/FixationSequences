@@ -37,6 +37,7 @@ from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.nn.functional as functional
 import torch.optim as optim
+from torch.optim.lr_scheduler import LambdaLR
 from torchvision import transforms
 
 import pandas as pd
@@ -58,7 +59,7 @@ from matplotlib import pyplot as plt
 #Dataset and Transforms
 from utils.Dataset_And_Transforms import FigrimFillersDataset, Downsampling, ToTensor, ExpandTargets, Targets2D
 #Loss-Function
-from utils.MyLoss import myLoss 
+from utils.MyLoss import myLoss
 #Early stopping
 from utils.EarlyStopping import EarlyStopping
 #Adapted Sigmoid Function
@@ -123,21 +124,16 @@ def create_datasets(batch_size):
 # In[26]:
 
 
-#set global boolean gpu value, so that everything will run on the gpu (if True) or cpu (if false)
-if __name__ == "__main__":
+#set extract arguments given on calling the script from the command line
     
-    global batch_size
-    batch_size = int(sys.argv[1])
+batch_size = int(sys.argv[1])
     
-    global lr
-    lr = float(sys.argv[2])
+lr = float(sys.argv[2])
     
-    global n_epochs
-    n_epochs = int(sys.argv[3])
+n_epochs = int(sys.argv[3])
     
-    global gpu
-    gpu = bool(sys.argv[4])
-    #gpu = True
+gpu = bool(sys.argv[4])
+#gpu = True
 
 
 # In[27]:
@@ -154,6 +150,8 @@ class TestNet(nn.Module):
         self.conv2 = nn.Conv2d(64, 128, 3, stride=1, padding=1)
         self.conv2_bn = nn.BatchNorm2d(128)
         self.conv3 = nn.Conv2d(128, 1, 3, stride=1, padding=1)
+        self.pool1 = nn.AdaptiveMaxPool2d((50,50))
+        self.conv4 = nn.Conv2d(1, 1, 1, stride=1, padding=25)
         #scale parameter for the sigmoid function
         self.upper_bound = nn.Parameter(torch.Tensor([1]))
         #make it considered by autograd
@@ -173,11 +171,16 @@ class TestNet(nn.Module):
         x = functional.relu(self.conv2(x))
         #print("input sum after second conv and relu: {}".format(torch.sum(x)))
         x = self.conv2_bn(x)
+        #print("output shape: {}".format(x.size()))
         #print("input sum after second batch normalization: {}".format(torch.sum(x)))
         #if scaled by a negative value, we would try to take the ln of negative values in the loss  function
         #(ln is not defined for negative values), so make sure that the scaling parameter is positive
-        x = mySigmoid(self.conv3(x), abs(self.upper_bound), gpu)
+        #x = mySigmoid(self.conv3(x), abs(self.upper_bound), gpu)
+        #x = functional.relu(self.conv3(x))
+        x = self.conv3(x)
         #print("input sum after last conv and sigmoid: {}".format(torch.sum(x)))
+        x = self.pool1(x)
+        x = self.conv4(x)
         
         return x
 
@@ -194,14 +197,11 @@ print(model)
 # In[28]:
 
 
-#initialize visdom-line-plotter-instances that are available from everywhere within the script   
-if __name__ == "__main__":
+#initialize visdom-line-plotter-instances 
 
-    global plotter_train
-    plotter_train = VisdomLinePlotter(env_name='training', server="http://130.63.188.108", port=9876)
+plotter_train = VisdomLinePlotter(env_name='training', server="http://130.63.188.108", port=9876)
     
-    global plotter_val
-    plotter_eval = VisdomLinePlotter(env_name='evaluation', server="http://130.63.188.108", port=9876)
+plotter_eval = VisdomLinePlotter(env_name='evaluation', server="http://130.63.188.108", port=9876)
 
 
 # In[29]:
@@ -210,13 +210,17 @@ if __name__ == "__main__":
 #optimizer with learning rate
 optimizer = optim.SGD(model.parameters(), lr=lr)
 
+#lr-scheduler
+lambda1 = lambda epoch: 0.95 ** epoch
+scheduler = LambdaLR(optimizer, lr_lambda=lambda1)
+
 #Poisson-Loss
-criterion = nn.PoissonNLLLoss()
+criterion = nn.PoissonNLLLoss(log_input=True, reduction="mean")
 
 # In[30]:
 
 
-def train_model(model, batch_size, patience, n_epochs, gpu):
+def train_model(model, batch_size, patience, n_epochs, gpu, plotter_train, plotter_eval):
     
     # to track the training loss as the model trains
     train_losses = []
@@ -235,6 +239,10 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
         ###################
         # train the model #
         ###################
+        
+        #schedule LR
+        scheduler.step()
+        
         model.train() # prep model for training
         t = tqdm(iter(train_loader), desc="[Train on Epoch {}/{}]".format(epoch, n_epochs))
         for i, example in enumerate(t): #start at index 0
@@ -252,13 +260,13 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
                 if torch.cuda.is_available():
                     data = data.to('cuda')
                     target = target.to('cuda')
-                    
+            
             # forward pass: compute predicted outputs by passing inputs to the model
             output = model(data)
             
             #drop channel-dimension (is only 1) so that outputs will be of same size as targets (batch_size,100,100)
             #infer batch dimension as last batch won't have the full size of eg 128
-            output = output.view(-1, target.size()[-2], target.size()[-2])
+            output = output.view(-1, target.size()[-1], target.size()[-2])
             
             #print("output size: {}".format(output.size()))
             # calculate the loss
@@ -347,11 +355,12 @@ def train_model(model, batch_size, patience, n_epochs, gpu):
 
     return  model, avg_train_losses, avg_valid_losses
 
+print('Starting to load results data')
 
 #load df to store results in
 results = pd.read_csv("results.csv")
 #create temporary df (its contents will be appended to "results.csv")
-results_cur = pd.DataFrame(columns = ["batch_size", "learning_rate", "mean_accuracy_per_image", "mean_test_loss", "mean_validation_loss", "mean_train_loss", "number_of_hits", "number_of_test_images", "number_of_fixations"])
+results_cur = pd.DataFrame(columns = ["batch_size", "n_epochs", "learning_rate", "mean_accuracy_per_image", "mean_test_loss", "mean_validation_loss", "mean_train_loss", "number_of_hits", "number_of_test_images", "number_of_fixations"])
 
 # In[31]:
 
@@ -360,12 +369,14 @@ results_cur = pd.DataFrame(columns = ["batch_size", "learning_rate", "mean_accur
 batch_size #= 32
 n_epochs #= 10
 
+print('Create data sets')
 train_loader, val_loader, test_loader = create_datasets(batch_size)
 
 # early stopping patience; how long to wait after last time validation loss improved.
-patience = 5
+patience = 20
 
-model, train_loss, valid_loss = train_model(model, batch_size, patience, n_epochs, gpu)
+print('Start trainging')
+model, train_loss, valid_loss = train_model(model, batch_size, patience, n_epochs, gpu, plotter_train, plotter_eval)
 
 
 # In[ ]:
@@ -446,7 +457,7 @@ for i, example in enumerate(t): #start at index 0
                 output_subset = output[batch_idx]
                 target_subset = target[batch_idx]
                 target_locs_subset = target_locs[batch_idx]
-                acc_this_image, hits, num_fix = accuracy(output_subset, target_subset, target_locs_subset)
+                acc_this_image, hits, num_fix = accuracy(output_subset, target_subset, target_locs_subset, gpu)
                 acc_per_image.append(acc_this_image)
                 hit_list.append(hits)
                 n_fixations.append(num_fix)
@@ -474,6 +485,7 @@ for name, param in model.named_parameters():
 
 #store all the information from this hyperparameter configuration
 results_cur.loc[0,"batch_size"] = batch_size
+results_cur.loc[0, "n_epochs"] = n_epochs
 results_cur.loc[0, "learning_rate"] = lr
 results_cur.loc[0, "mean_accuracy_per_image"] = np.mean(acc_per_image)
 results_cur.loc[0, "mean_test_loss"] = np.average(test_losses)
