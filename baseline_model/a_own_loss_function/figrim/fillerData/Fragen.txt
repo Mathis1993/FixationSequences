@@ -1,0 +1,20 @@
+Ich will die Filler-Bilder und die Filler-Fixations (Target-Bilder rauslassen, oder? Wg. Memorability und mehrmals gezeigt, also wäre eh auch nur die erste Präsentation nutzbar, oder?)
+
+Ordner Fixation-Locs: Alle Pixel, die je irgendein Proband fixiert hat?
+Ordner Fixation-Maps: Heatmap basierend auf den Fixation-Locs (einfach 0, 1 schwarz, weiß)?
+allImages.m --> Für jedes Bild für jeden Probanden die Sequenz der Fixationen mit x-y-Koordinaten, z.B. bei Bild 1 ein Proband mal 7, ein anderer mal 6 Fixationen?
+
+Nehme ich dann sozusagen jedes Bild mehrfach als Input und als Output die Fixationssequenz von jedem Probanden? 
+Ist es ein Problem, dass der Output immer unterschiedlich lang ist?
+
+- Bilder als Matrix
+- Fixationssequenzen jedes Probanden als Matrix
+- Fixationssequenzen jedes Probanden als Bild (Größe wie die gezeigten Bilder, in denen z.B. alles schwarz ist und nur die Fixationen weiß)? Dann geht aber Sequenz-Info verloren
+- Pandas Dataframe mit Bilddatei, Pfad, Bild als RGB-Matrix, Fixationen, Proband? Bilder dann pro Proband, also jedes Bild mehrmals? Geht so ein Dataframe überhaupt?
+
+dict aus bild und Liste mit VPs?
+list mit Bildern
+
+Wo finde ich die Fixations?
+In welchem Format liegen die Fixations vor? 
+Es gibt Fixation maps, so wie die auf der Homepage dargestellten aussehen, ist das eine "gemittelte" Fixationmap über alle durchschnittlich 15 Probanden pro Filler-Bild. Wie wird die erstellt? Gibt es auch "gemittelte" Fixation-Data über alle Probanden? Sollte ich die benutzen? Oder benutze ich die Fixation Data pro Proband?
