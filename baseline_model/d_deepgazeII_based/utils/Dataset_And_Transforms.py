@@ -146,3 +146,19 @@ class Targets2D(object):
         fixations = functional.pad(fixations, (0,0,0,pad_amount), mode='constant', value=-1000)
         
         return {'image': image, 'fixations': output, 'fixation_locs': fixations}
+    
+    
+class NormalizeTargets(object):
+"""
+- Each 2D Target entry corresponds to the number of fixation this pixcel got. To use them in the context of Cross Entropy 
+ Loss, the values need to be normalized to sum to 1
+- Apply only after "Target2D"
+"""
+
+def __call__(self, sample):
+    image, fixations = sample['image'], sample['fixations']
+    
+    #normalize to sum of 1
+    fixations = fixations / torch.sum(fixations)
+    
+    return {'image': image, 'fixations': fixations}

@@ -93,7 +93,7 @@ def create_datasets(batch_size):
     #transforms
     #downsampling by factor of 10 as the images were resized from (1000,1000) to (100,100),
     #so the fixations have to be, too
-    data_transform = transforms.Compose([ToTensor(),Downsampling(10), Targets2D(100,100, 100)]) #ExpandTargets(100)])
+    data_transform = transforms.Compose([ToTensor(),Downsampling(10), Targets2D(100,100, 100), NormalizeTargets()]) #ExpandTargets(100)])
     
     #load split data
     figrim_dataset_train = FigrimFillersDataset(json_file='allImages_unfolded_train.json',
@@ -254,6 +254,8 @@ class TestNet(nn.Module):
         x = functional.relu(self.conv_3(x))
         #print("input sum after 3. conv and relu: {}".format(torch.sum(x)))
         x = self.conv_4(x)
+        #flattening
+        x = x.view(batch_size, -1)
         #print("input sum after 4. conv: {}".format(torch.sum(x)))
         #x = self.cb(x)
         #print("input sum after CB: {}".format(torch.sum(x)))
@@ -289,60 +291,8 @@ optimizer = optim.Adam(model.parameters(), lr=lr)
 #if lr is 0.2 in the beginning, after 60 epochs it will decrease to 0.02 with gamma = 0.1
 #scheduler = StepLR(optimizer, step_size=15, gamma=0.5)
 
-#Poisson-Loss
-#criterion = nn.PoissonNLLLoss(log_input=True, full=True, reduction="mean")
-
-class Likelihood_Loss(nn.Module):
-    """
-    Takes:
-    - activation_batch of size (batch_size, 1, x, y) describing the predicted probability distribution for fixations 
-      (how likely is each image to be fixated) over all pixels of an (x,y)-image 
-    - target_batch of size (batch_size, 1, x, y) describing the amount of fixations every pixel got (0 for no fixation, 1 for
-      one fixation, 2 for two fixations and so on)
-      
-    Gives:
-    - negative log-likelihood_loss: log-likelihood of fixation locations in the target assuming the predicted probability
-      distribution. If on pixel has more than one fixation, its likelihood is counted as many times. For the implementation
-      this means that we can just multipy the predicted probability distribution with the target map. In doing so, we evaluate
-      the predicted probability density in the fixated locations, counting a location more than once if it was fixated more 
-      than once
-    - mean of negative log-likelihood_loss over the given batch is returned
-    """
-    
-    def __init__(self):
-        super(Likelihood_Loss, self).__init__()
-        
-    def forward(self, activation_batch, target_batch):
-        #print(activation_batch[0])
-        #print(torch.sum(activation_batch[0]))
-        #Wieso log-Likelihood? --> Kümmerer et al.
-        #Wie ohne Offset stabil machen?
-        #x = activation_batch * target_batch
-        #x = x[x.nonzero().detach_()]
-        #x = -torch.log(activation_batch * target_batch + 1e-05)
-        #x = -(activation_batch * target_batch)
-        #print(torch.sum(x))
-        #x = torch.sum(torch.sum(x, dim=-1), dim=-1)
-        #print(torch.mean(x))
-        #return torch.mean(x) #mean over the batch
-        
-        #x = torch.log(activation_batch + 1e-10) + torch.log(target_batch + 1e-10)
-        #x = torch.sum(torch.sum(x, dim=-1), dim=-1)
-        #print(torch.mean(x))
-        #return torch.mean(x)
-        
-        loss = 0
-        for h in range(activation_batch.size(0)):
-            for (i,j) in target_batch[h]:
-                if (i,j) == (-1000,-1000):
-                    break
-                loss += torch.log(activation_batch[h,0,i,j] + 1e-10)
-        loss /= activation_batch.size(0)
-        #print(loss)
-        return loss * -1
-    
-#criterion = Likelihood_Loss()
-criterion = nn.PoissonNLLLoss(log_input=True, full=True, reduction="mean")
+#Cross Entropy Loss (Combining Softmax and NLLLoss)
+criterion = nn.CrossEntropyLoss(reduction='mean')
 
 # In[30]:
 
@@ -400,6 +350,10 @@ def train_model(model, batch_size, patience, n_epochs, gpu, plotter_train, plott
             #print("output size: {}".format(output.size()))
             # calculate the loss
             #loss = myLoss(output, target)
+            
+            #flatten targets (normalization happened through transform)
+            target = target.view(batch_size, -1)
+            
             loss = criterion(output, target)
             # backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
@@ -439,6 +393,9 @@ def train_model(model, batch_size, patience, n_epochs, gpu, plotter_train, plott
             
             #drop channel-dimension (is only 1) so that outputs will be of same size as targets (batch_size,100,100)
             output = output.view(-1, target.size()[-2], target.size()[-2])
+            
+            #flatten targets (normalization happened through transform)
+            target = target.view(batch_size, -1)
             
             #print("output sum: {}".format(torch.sum(output)))
             # calculate the loss
