@@ -1,0 +1,17 @@
+Paper Gated Recurrent Units
+
+Pytorch Tutorial Sprachverarbeitung (Anzahl der Layer zuerst auf 1)
+
+Blog Posts, z.B.
+- https://towardsdatascience.com/illustrated-guide-to-lstms-and-gru-s-a-step-by-step-explanation-44e9eb85bf21
+- https://colah.github.io/posts/2015-08-Understanding-LSTMs/
+
+Buch Goodfellow
+
+----------------------------------------
+
+- Loss mglw. einfach quadrierter Fehler (Quadrat der Distanz zwischen vorhergesagten und tatsächlich fixierten Pixeln)
+
+----------------------------------------
+
+- Generell Code-Effizienz: Modelllernbeispiel: Code zu Ingos GAN-Toolbox
