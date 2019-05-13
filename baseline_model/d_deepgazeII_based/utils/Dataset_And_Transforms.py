@@ -149,16 +149,16 @@ class Targets2D(object):
     
     
 class NormalizeTargets(object):
-"""
-- Each 2D Target entry corresponds to the number of fixation this pixcel got. To use them in the context of Cross Entropy 
- Loss, the values need to be normalized to sum to 1
-- Apply only after "Target2D"
-"""
+    """
+    - Each 2D Target entry corresponds to the number of fixation this pixcel got. To use them in the context of Cross Entropy 
+     Loss, the values need to be normalized to sum to 1
+    - Apply only after "Target2D"
+    """
 
-def __call__(self, sample):
-    image, fixations = sample['image'], sample['fixations']
-    
-    #normalize to sum of 1
-    fixations = fixations / torch.sum(fixations)
-    
-    return {'image': image, 'fixations': fixations}
+    def __call__(self, sample):
+        image, fixations, fixation_locs = sample['image'], sample['fixations'], sample['fixation_locs']
+
+        #normalize to sum of 1
+        fixations = fixations / torch.sum(fixations)
+
+        return {'image': image, 'fixations': fixations, 'fixation_locs': fixation_locs}

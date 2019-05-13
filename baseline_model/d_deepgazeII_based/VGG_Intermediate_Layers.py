@@ -58,7 +58,7 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 #Dataset and Transforms
-from utils.Dataset_And_Transforms import FigrimFillersDataset, Downsampling, ToTensor, ExpandTargets, Targets2D
+from utils.Dataset_And_Transforms import FigrimFillersDataset, Downsampling, ToTensor, ExpandTargets, Targets2D, NormalizeTargets
 #Loss-Function
 from utils.MyLoss import myLoss
 #Early stopping
@@ -254,8 +254,6 @@ class TestNet(nn.Module):
         x = functional.relu(self.conv_3(x))
         #print("input sum after 3. conv and relu: {}".format(torch.sum(x)))
         x = self.conv_4(x)
-        #flattening
-        x = x.view(batch_size, -1)
         #print("input sum after 4. conv: {}".format(torch.sum(x)))
         #x = self.cb(x)
         #print("input sum after CB: {}".format(torch.sum(x)))
@@ -263,8 +261,12 @@ class TestNet(nn.Module):
         #print("input sum after Smoothing: {}".format(torch.sum(x)))
         #softmax to obtain probability distribution
         #x = nn.Softmax(2)(x.view(*x.size()[:2], -1)).view_as(x)
-        #print("input sum after Softmax: {}".format(torch.sum(x)))
         #print("input shape after Softmax: {}".format(x.size()))
+        #flattening
+        x = x.view(batch_size, -1)
+        x = functional.softmax(x)
+        #print("input sum after Softmax: {}".format(torch.sum(x)))
+        #print("input sum after Softmax abs: {}".format(torch.sum(abs(x))))
     
         return x
 
@@ -291,8 +293,18 @@ optimizer = optim.Adam(model.parameters(), lr=lr)
 #if lr is 0.2 in the beginning, after 60 epochs it will decrease to 0.02 with gamma = 0.1
 #scheduler = StepLR(optimizer, step_size=15, gamma=0.5)
 
+class Cross_Entropy(nn.Module):
+    
+    def __init__(self):
+        super(Cross_Entropy, self).__init__()
+        
+    def forward(self, output, target):
+        return -torch.sum(target * torch.log(output))
+
+
 #Cross Entropy Loss (Combining Softmax and NLLLoss)
-criterion = nn.CrossEntropyLoss(reduction='mean')
+#criterion = nn.CrossEntropyLoss(reduction='mean')
+criterion = Cross_Entropy()
 
 # In[30]:
 
@@ -345,16 +357,18 @@ def train_model(model, batch_size, patience, n_epochs, gpu, plotter_train, plott
             
             #drop channel-dimension (is only 1) so that outputs will be of same size as targets (batch_size,100,100)
             #infer batch dimension as last batch won't have the full size of eg 128
-            output = output.view(-1, target.size()[-1], target.size()[-2])
+            #output = output.view(-1, target.size()[-1], target.size()[-2])
             
             #print("output size: {}".format(output.size()))
             # calculate the loss
             #loss = myLoss(output, target)
-            
+         
             #flatten targets (normalization happened through transform)
             target = target.view(batch_size, -1)
+            #print(target.size())
             
             loss = criterion(output, target)
+            #print(loss)
             # backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
             # perform a single optimization step (parameter update)
@@ -392,7 +406,7 @@ def train_model(model, batch_size, patience, n_epochs, gpu, plotter_train, plott
             output = model(data)
             
             #drop channel-dimension (is only 1) so that outputs will be of same size as targets (batch_size,100,100)
-            output = output.view(-1, target.size()[-2], target.size()[-2])
+            #output = output.view(-1, target.size()[-2], target.size()[-2])
             
             #flatten targets (normalization happened through transform)
             target = target.view(batch_size, -1)
