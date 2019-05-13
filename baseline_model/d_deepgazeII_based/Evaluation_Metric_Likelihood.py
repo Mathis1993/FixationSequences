@@ -1,3 +1,10 @@
+######################################
+#Gleichung DeepgazeII-Paper am Ende von S. 6, Baselinemodel ist Gleichverteilung (jedes Pixel hat Wslkt. von 1/10000)
+#--> Vorhergesagte Dichte an fixierten Koordinaten auswerten minus Vorhersage des Baselinemodells (Nullmodells)
+#an diesen Stellen; dann schauen ob der Gain über das Baselinemodel sig. von 0 verschieden ist
+######################################
+
+
 #########
 #IMPORTS#
 #########
@@ -23,11 +30,11 @@ from utils.Gaussian_Map2 import gaussian_map2
 #####################
 
 gpu = True
-class MyResNet18(torch.nn.Module):
+class MyVGG19(torch.nn.Module):
     def __init__(self):
-        super(MyResNet18, self).__init__()
+        super(MyVGG19, self).__init__()
         #leave out final two layers (avgsize-pooling and flattening)
-        features = list(torchvision.models.resnet18(pretrained = True).children())[:-2]
+        features = list(torchvision.models.vgg19(pretrained = True).features)
         self.features = nn.ModuleList(features).eval() 
         
     def forward(self, x):
@@ -37,18 +44,22 @@ class MyResNet18(torch.nn.Module):
             #forward propagation
             x = model(x)
             #take 4th module's activations
-            if ii in {2,4,6}:
+            if ii in {28,29,31,32,35}:
                 results.append(x)
+           # if ii == 15:
+           #     break
         #upsample (rescale to same size)
-        x = functional.interpolate(x, size=(100,100), mode="bilinear")
-        #x = functional.interpolate(results[0], size=(100,100), mode="bilinear")
-        for i in range(len(results)):
+        #x = functional.interpolate(x, size=(100,100), mode="bilinear")
+        #only take intermediate features, not overall output
+        x = functional.interpolate(results[0], size=(100,100), mode="bilinear")
+        for i in range(1,len(results)):
             #upsample (rescale to same size)
             intermediate = functional.interpolate(results[i], size=(100,100), mode="bilinear")
             #append to other output along feature channel dimension
             x = torch.cat((x,intermediate), 1)
         #return combined activations
         return x
+
 
 class CenterBiasSchuett(nn.Module):
     def __init__(self, gpu=False):
@@ -100,7 +111,7 @@ class TestNet(nn.Module):
 
     def __init__(self, gpu=False):
         super(TestNet, self).__init__()
-        self.resnet = MyResNet18()
+        self.vgg = MyVGG19()
         #reduce the 576 (512 + 64) channels before upsampling (see forward function) to prevent memory problems
         #self.red_ch = nn.Conv2d(512, 256, 1)
         #3 input image channels (color-images), 64 output channels,  3x3 square convolution kernel
@@ -108,7 +119,7 @@ class TestNet(nn.Module):
         #self.convfirst = nn.Conv2d(576,1,1)
         #self.bnfirst = nn.BatchNorm2d(1)
         #self.convsecond = nn.Conv2d(1,1,1)
-        self.conv_1 = nn.Conv2d(896,16,1)
+        self.conv_1 = nn.Conv2d(2560,16,1)
         self.conv_2 = nn.Conv2d(16,32,1)
         self.conv_3 = nn.Conv2d(32,2,1)
         self.conv_4 = nn.Conv2d(2,1,1)
@@ -121,23 +132,38 @@ class TestNet(nn.Module):
                 self.cuda()
         
     def forward(self, x):
-        x = self.resnet(x)
+        #print("input sum at beginning of forward pass: {}".format(torch.sum(x)))
+        x = self.vgg(x)
         #x = functional.relu(self.convfirst(x))
         #x = self.bnfirst(x)
         #x = self.convsecond(x)
-        #print("input sum at beginning of forward pass: {}".format(torch.sum(x)))
-       
+        #print("input sum after vgg: {}".format(torch.sum(x)))
         x = functional.relu(self.conv_1(x))
+        #print("input sum after 1. conv and relu: {}".format(torch.sum(x)))
         x = functional.relu(self.conv_2(x))
+        #print("input sum after 2. conv and relu: {}".format(torch.sum(x)))
         x = functional.relu(self.conv_3(x))
+        #print("input sum after 3. conv and relu: {}".format(torch.sum(x)))
         x = self.conv_4(x)
-        x = self.cb(x)
-        x = self.smooth(x)
+        #print("input sum after 4. conv: {}".format(torch.sum(x)))
+        #x = self.cb(x)
+        #print("input sum after CB: {}".format(torch.sum(x)))
+        #x = self.smooth(x)
+        #print("input sum after Smoothing: {}".format(torch.sum(x)))
+        #softmax to obtain probability distribution
+        #x = nn.Softmax(2)(x.view(*x.size()[:2], -1)).view_as(x)
+        #print("input shape after Softmax: {}".format(x.size()))
+        #flattening
+        x = x.view(batch_size, -1)
+        x = functional.softmax(x)
+        #print("input sum after Softmax: {}".format(torch.sum(x)))
+        #print("input sum after Softmax abs: {}".format(torch.sum(abs(x))))
     
         return x
 
 #initilaize the NN
-model = TestNet(gpu=True)
+model = TestNet(gpu)
+
 
 
 #load the pretrained parameters
@@ -210,4 +236,4 @@ for i, example in enumerate(t): #start at index 0
     lhs_saturated.append(likelihood_saturated)
     
 results = pd.DataFrame({"lhs_null": lhs_null, "lhs_model": lhs_model, "lhs_saturated": lhs_saturated})
-results.to_csv("likelihoods_resnet_intermediate_features.csv", header=True, index=False)
+results.to_csv("likelihoods_vgg_intermediate_features.csv", header=True, index=False)
