@@ -14,4 +14,4 @@ Buch Goodfellow
 
 ----------------------------------------
 
-- Generell Code-Effizienz: Modelllernbeispiel: Code zu Ingos GAN-Toolbox
+- Generell Code-Effizienz: Modelllernbeispiel: Code zu Ingos GAN-Toolbox: https://github.com/fruendlab/gan-tools
