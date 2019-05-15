@@ -1,10 +1,14 @@
-Paper Gated Recurrent Units
+Paper LSTMs:  Hochreiter & Schmidhuber (1997)
+Paper Gated Recurrent Units: Cho, et al. (2014)
 
 Pytorch Tutorial Sprachverarbeitung (Anzahl der Layer zuerst auf 1)
 
 Blog Posts, z.B.
+- https://towardsdatascience.com/illustrated-guide-to-recurrent-neural-networks-79e5eb8049c9
 - https://towardsdatascience.com/illustrated-guide-to-lstms-and-gru-s-a-step-by-step-explanation-44e9eb85bf21
 - https://colah.github.io/posts/2015-08-Understanding-LSTMs/
+
+- https://karpathy.github.io/2015/05/21/rnn-effectiveness/ (Maybe for later)
 
 Buch Goodfellow
 

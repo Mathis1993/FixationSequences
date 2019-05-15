@@ -1,0 +1,1 @@
+Last Layer LogSoftmax and then just NLLLos?
