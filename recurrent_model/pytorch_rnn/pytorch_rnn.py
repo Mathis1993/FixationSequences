@@ -18,6 +18,7 @@ pytorch_rnn 0.0001 20 True
 
 from docopt import docopt
 from pprint import pprint
+import sys
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='FIXME')
@@ -46,35 +47,67 @@ import math
 import os
 from skimage import io, transform
 import numpy as np
-import sys
-#status bar
-from tqdm import tqdm
-
-#import exactly in this way to make sure that matplotlib can generate
-#a plot without being connected to a display 
-#(otherwise _tkinter.TclError: couldn't connect to display localhost:10.0)
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib import pyplot as plt
 
 #Dataset and Transforms
 from utils.Dataset_And_Transforms import FigrimFillersDataset, Downsampling, ToTensor, SequenceModeling
 from utils.Create_Datasets import create_datasets    
-    
+from utils.Loss_Plot import loss_plot
+from utils.Train_Model import train_model
+from utils.MyVisdom import VisdomLinePlotter
 
 #Create datasets
-train_loader, val_loader, test_loader = create_datasets(batch_size=1, data_transform=transforms.Compose([ToTensor(),Downsampling(10), SequenceModeling(flatten_image=True)]))
+train_loader, val_loader, test_loader = create_datasets(batch_size=1, data_transform=transforms.Compose([ToTensor(), Downsampling(10), SequenceModeling()]))
 
 #Model
 #input: image and fixation-input together
-rnn = nn.RNN(input_size = 40002, hidden_size=10002, num_layers=1)
+#expects input of shape (seq_len, batch, input_size), but we have (batch, seq_len, input_size), so arg batch_first True
+input_size = 40002 #100x100 image with 3 color channels plus 100x100 possible fixation locs plus sos and eos
+hidden_size = 10002
+rnn = nn.RNN(input_size =input_size, hidden_size=hidden_size, num_layers=1, batch_first=True)
 
+#Push model to GPU
+if gpu:
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        rnn.cuda()
 
-for i, example in enumerate(dataset_loader_train): #start at index 0
-    # get the inputs
-    image = example["image"]
-    inputs = example["inputs"]
-    targets = example["fixations"]
-    if i == 0:
-        break
-#input of shape (seq_len, batch, input_size)
+#Optimizer
+optimizer = optim.SGD(rnn.parameters(), lr=0.5)
+
+#Loss-Function
+criterion = nn.CrossEntropyLoss()
+
+#initialize visdom-line-plotter-instances 
+plotter_train = VisdomLinePlotter(env_name='training', server="http://130.63.188.108", port=9876)
+plotter_eval = VisdomLinePlotter(env_name='evaluation', server="http://130.63.188.108", port=9876)
+
+#load df to store results in
+results = pd.read_csv("results/results.csv")
+#set training_id: Increment last one by 1 or start at 0 if no previous id is present
+try:
+    last_training_id = results.loc[len(results)-1, "training_id"]
+    training_id = last_training_id + 1
+except:
+    training_id = 0
+#create temporary df (its contents will be appended to "results.csv")
+results_cur = pd.DataFrame(columns = ["training_id", "n_epochs", "learning_rate", "mean_train_loss", "mean_validation_loss"])
+
+# early stopping patience; how long to wait after last time validation loss improved.
+patience = 50
+
+#Start Training
+model, train_loss, valid_loss = train_model(rnn, training_id, patience, n_epochs, gpu, plotter_train, plotter_eval, train_loader, val_loader, optimizer, criterion, lr)
+
+#visualize the loss as the network trained
+loss_plot(train_loss, valid_loss, lr, training_id)
+
+#store all the information from this hyperparameter configuration
+results_cur.loc[0,"training_id"] = training_id
+results_cur.loc[0, "n_epochs"] = n_epochs
+results_cur.loc[0, "learning_rate"] = lr
+results_cur.loc[0, "mean_train_loss"] = np.average(train_loss)
+results_cur.loc[0, "mean_validation_loss"] = np.average(valid_loss)
+#and append results_cur to results
+results = results.append(results_cur)
+#store results
+results.to_csv("results/results.csv", index=False, header=True)
