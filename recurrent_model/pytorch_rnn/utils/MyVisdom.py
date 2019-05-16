@@ -11,7 +11,7 @@ class VisdomLinePlotter(object):
         if var_name not in self.plots:
             self.plots[var_name] = self.viz.line(X=np.array([x,x]), Y=np.array([y,y]), env=self.env, opts=dict(
                 legend=[split_name],
-                title="{}, batch size = {}, lr = {}".format(title_name, batch_size, lr),
+                title="{}, training_id = {}, lr = {}".format(title_name, training_id, lr),
                 xlabel=x_label,
                 ylabel=var_name
             ))
