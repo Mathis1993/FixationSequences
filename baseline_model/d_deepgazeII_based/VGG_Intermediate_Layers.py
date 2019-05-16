@@ -444,7 +444,7 @@ def train_model(model, batch_size, patience, n_epochs, gpu, plotter_train, plott
         
         # early_stopping needs the validation loss to check if it has decresed, 
         # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model, batch_size, lr)
+        early_stopping(valid_loss, model, training_id, lr)
         
         if early_stopping.early_stop:
             print("Early stopping")
