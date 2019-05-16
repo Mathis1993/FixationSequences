@@ -72,7 +72,7 @@ if gpu:
         rnn.cuda()
 
 #Optimizer
-optimizer = optim.SGD(rnn.parameters(), lr=0.5)
+optimizer = optim.SGD(rnn.parameters(), lr=lr)
 
 #Loss-Function
 criterion = nn.CrossEntropyLoss()

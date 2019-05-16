@@ -126,6 +126,6 @@ def train_model(model, training_id, patience, n_epochs, gpu, plotter_train, plot
         
     # load the last checkpoint with the best model
     name = "checkpoint_id_{}_lr_{}.pt".format(training_id, lr)
-    model.load_state_dict(torch.load(name))
+    model.load_state_dict(torch.load("results/" + name))
 
     return  model, avg_train_losses, avg_valid_losses
