@@ -3,6 +3,7 @@ from utils.EarlyStopping import EarlyStopping
 
 #status bar
 from tqdm import tqdm
+import numpy as np
 
 def train_model(model, training_id, patience, n_epochs, gpu, plotter_train, plotter_eval, train_loader, val_loader, optimizer, criterion, lr):
     

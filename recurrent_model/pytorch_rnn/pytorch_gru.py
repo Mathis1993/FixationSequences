@@ -52,7 +52,7 @@ import numpy as np
 from utils.Dataset_And_Transforms import FigrimFillersDataset, Downsampling, ToTensor, SequenceModeling
 from utils.Create_Datasets import create_datasets    
 from utils.Loss_Plot import loss_plot
-from utils.Train_Model_RNN import train_model
+from utils.Train_Model_LSTM import train_model
 from utils.MyVisdom import VisdomLinePlotter
 
 #Create datasets
@@ -63,7 +63,7 @@ train_loader, val_loader, test_loader = create_datasets(batch_size=1, data_trans
 #expects input of shape (seq_len, batch, input_size), but we have (batch, seq_len, input_size), so arg batch_first True
 input_size = 40002 #100x100 image with 3 color channels plus 100x100 possible fixation locs plus sos and eos
 hidden_size = 10002
-rnn = nn.RNN(input_size =input_size, hidden_size=hidden_size, num_layers=1, batch_first=True)
+rnn = nn.GRU(input_size =input_size, hidden_size=hidden_size, num_layers=1, batch_first=True)
 
 #Push model to GPU
 if gpu:
