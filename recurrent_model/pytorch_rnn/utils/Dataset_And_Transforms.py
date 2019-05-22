@@ -227,14 +227,6 @@ class SequenceModeling(object):
         image = image.view(-1)
             
         #COMBINE IMAGE AND TIME STEP INPUTS
-        c = torch.empty(6,40002)
-
-        a = torch.randn(6,10002)
-        b = torch.randn(30000)
-
-        for i in range(a.size(0)):
-            c[i] = torch.cat((a[i],b),0)
-        
         inputs_combined = torch.empty(inputs.size(0), inputs.size(1) + image.size(0))
         for i in range(inputs.size(0)):
             inputs_combined[i] = torch.cat((image, inputs[0]),0)
