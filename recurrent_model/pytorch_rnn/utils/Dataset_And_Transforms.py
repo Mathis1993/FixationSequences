@@ -224,11 +224,11 @@ class SequenceModeling(object):
         
         
         #IMAGE
-        image = image.view(-1)
+        image_fl = image.view(-1)
             
         #COMBINE IMAGE AND TIME STEP INPUTS
-        inputs_combined = torch.empty(inputs.size(0), inputs.size(1) + image.size(0))
+        inputs_combined = torch.empty(inputs.size(0), inputs.size(1) + image_fl.size(0))
         for i in range(inputs.size(0)):
-            inputs_combined[i] = torch.cat((image, inputs[0]),0)
+            inputs_combined[i] = torch.cat((image_fl, inputs[i]),0)
         
-        return {"image": image, "inputs": inputs, "inputs_combined": inputs_combined, "targets": new_targets}
+        return {"image": image, "image_fl": image_fl, "inputs": inputs, "inputs_combined": inputs_combined, "targets": new_targets}
