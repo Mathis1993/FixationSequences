@@ -4,3 +4,6 @@ Last Layer LogSoftmax and then just NLLLoss?
 Bilder auf 10x10 runterskalieren, bzw. Vorhersage nur in 10x10 Grid (Vorherzusagen, welche grid cell von 100 insgesamt wann fixiert wird, wäre ja auch schon was)? (Vor allem, weil nicht genug memory für LSTM)
 
 Oder: Bilder so groß wie mgl. durch VGG, dann am Ende auf 10x10 runter, sodass wir 10x10 Saliency Map (bzw. density) erhalten. Das dann zusammen mit einer fixation location pro time step in LSTM --> Outputs aus VGG zwischenspeichern?!
+
+Oder: Baselinemodel nehmen (VGG und Readout Network) und darauf LSTM/GRU setzen?
+--> Baselinemodel vortrainiert laden und Parameter freezen, vllt. dann genügend memory?
