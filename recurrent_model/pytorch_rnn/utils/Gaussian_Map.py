@@ -36,9 +36,9 @@ def gaussian_map(activations, sigma, w, gpu):
     return gaussian_map
 
 #square, uneven activations array
-activations = torch.randn(1,1,5,5)
-sigma = 1
-w = 1
-gpu = True
-print(gaussian_map(activations, sigma, w, gpu))
+#activations = torch.randn(1,1,5,5)
+#sigma = 1
+#w = 1
+#gpu = True
+#print(gaussian_map(activations, sigma, w, gpu))
 #print(gaussian(1,1,torch.Tensor([2]),1))
