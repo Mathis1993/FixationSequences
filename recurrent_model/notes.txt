@@ -7,3 +7,5 @@ Oder: Bilder so groß wie mgl. durch VGG, dann am Ende auf 10x10 runter, sodass 
 
 Oder: Baselinemodel nehmen (VGG und Readout Network) und darauf LSTM/GRU setzen?
 --> Baselinemodel vortrainiert laden und Parameter freezen, vllt. dann genügend memory?
+
+DeepgazeII-Saliency-Map and then RNN?
