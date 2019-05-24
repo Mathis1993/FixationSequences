@@ -9,7 +9,7 @@ Arguments:
 1. lr (float): Learning rate used in SGD.
 2. n_epochs (int): Amount of iterations over the training/validation dataset.
 3. gpu (bool): If to run on GPU (if available).
-(Batch size does not appear as an argument as it has to be 1 due to different lenghts of fixation sequences)
+(Batch size does not appear as an argument as it has to be 1 due to different lengths of fixation sequences)
 
 Examples:
 pytorch_rnn.py 0.0001 20 True
