@@ -1,36 +1,5 @@
 #!/usr/bin/env python
 
-"""
-Train RNN as available in Pytorch.
-
-Usage: pytorch_rnn.py <lr> <n_epochs> <gpu>
-
-Arguments:
-1. lr (float): Learning rate used in SGD.
-2. n_epochs (int): Amount of iterations over the training/validation dataset.
-3. gpu (bool): If to run on GPU (if available).
-(Batch size does not appear as an argument as it has to be 1 due to different lengths of fixation sequences)
-
-Examples:
-pytorch_rnn.py 0.0001 20 True
-
-"""
-
-from docopt import docopt
-from pprint import pprint
-import sys
-
-if __name__ == '__main__':
-    arguments = docopt(__doc__, version='FIXME')
-    pprint(arguments)
-
-    
-#set extract arguments given on calling the script from the command line        
-lr = float(sys.argv[1])
-n_epochs = int(sys.argv[2])
-gpu = bool(sys.argv[3])
-
-    
 
 import torch
 from torch.utils.data import Dataset, DataLoader
