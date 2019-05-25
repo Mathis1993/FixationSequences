@@ -9,10 +9,10 @@ Arguments:
 1. lr (float): Learning rate used in SGD.
 2. n_epochs (int): Amount of iterations over the training/validation dataset.
 3. gpu (bool): If to run on GPU (if available).
-(Batch size does not appear as an argument as it has to be 1 due to different lenghts of fixation sequences)
+(Batch size does not appear as an argument as it has to be 1 due to different lengths of fixation sequences)
 
 Examples:
-pytorch_rnn 0.0001 20 True
+pytorch_rnn.py 0.0001 20 True
 
 """
 
@@ -52,30 +52,54 @@ import numpy as np
 from utils.Dataset_And_Transforms import FigrimFillersDataset, Downsampling, ToTensor, SequenceModeling
 from utils.Create_Datasets import create_datasets    
 from utils.Loss_Plot import loss_plot
-from utils.Train_Model_LSTM import train_model
+from utils.Train_Model_DEEPGAZE_BASED import train_model
 from utils.MyVisdom import VisdomLinePlotter
+from utils.Model_Baseline_Deepgaze_Based_Test5 import Test5Net
 
 #Create datasets
 train_loader, val_loader, test_loader = create_datasets(batch_size=1, data_transform=transforms.Compose([ToTensor(), Downsampling(10), SequenceModeling()]))
 
-#Model
-#input: image and fixation-input together
-#expects input of shape (seq_len, batch, input_size), but we have (batch, seq_len, input_size), so arg batch_first True
-input_size = 40002 #100x100 image with 3 color channels plus 100x100 possible fixation locs plus sos and eos
-hidden_size = 10002
-rnn = nn.LSTM(input_size =input_size, hidden_size=hidden_size, num_layers=1, batch_first=True)
+#Baselinmodel; deepgazeII-based, Test 5
+#initilaize a baseline-model instance
+baseline_model = Test5Net(gpu)
+#load the trained parameters
+name = "baseline_batch_size_8_lr_5e-05.pt"
+baseline_model.load_state_dict(torch.load("results/" + name))
 
-#Push model to GPU
-if gpu:
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        rnn.cuda()
+#Recurrent Model
+#nur x-y-Kodierung (10002, Bild und x plus y) Verständnis von Distanz für das Modell
+input_size = 10000 #CNN context vector (eg 100x100, so flattened out 10000)
+hidden_size = 20 #vllt eher 10-50 Dimensionen
+
+class MyRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, gpu):
+        super(MyRNN, self).__init__()
+        self.rec_layer = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=1, batch_first=True)
+        self.fc_fix = nn.Linear(in_features=hidden_size, out_features=2) #x- and y-coordinate
+        self.fc_state = nn.Linear(in_features=hidden_size, out_features=3) #sos, eos, during sequence
+        self.gpu = gpu
+        if gpu:
+            if torch.cuda.is_available():
+                device = torch.device("cuda")
+                self.cuda()
+                
+    def forward(self, inputs):
+        output, (hidden, cell) = self.rec_layer(inputs)
+        out_fix = self.fc_fix(output)
+        out_state = self.fc_state(output)
+        return out_fix, out_state
+
+rnn_model = MyRNN(input_size=input_size, hidden_size=hidden_size, gpu=gpu) #lstm, gru
+#fc-layer, einen für x,y-Koordinaten, einen für state
+#Dann zwei Loss-Functions, Werte zB addieren (einmal MSE für xy, einmal cross entropy für state)
 
 #Optimizer
-optimizer = optim.SGD(rnn.parameters(), lr=lr)
+#optimizer = optim.SGD(cnn_rnn.parameters(), lr=lr)
+optimizer = optim.Adam(rnn_model.parameters(), lr=lr)
 
-#Loss-Function
-criterion = nn.CrossEntropyLoss()
+#Loss-Functions
+criterion_fixations = nn.MSELoss()
+criterion_state = nn.CrossEntropyLoss()
 
 #load df to store results in
 results = pd.read_csv("results/results.csv")
@@ -96,7 +120,7 @@ plotter_eval = VisdomLinePlotter(env_name='evaluation', server="http://130.63.18
 patience = 50
 
 #Start Training
-model, train_loss, valid_loss = train_model(rnn, training_id, patience, n_epochs, gpu, plotter_train, plotter_eval, train_loader, val_loader, optimizer, criterion, lr)
+model, train_loss, valid_loss = train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu, plotter_train, plotter_eval, train_loader, val_loader, optimizer, criterion_fixations, criterion_state, lr)
 
 #visualize the loss as the network trained
 loss_plot(train_loss, valid_loss, lr, training_id)

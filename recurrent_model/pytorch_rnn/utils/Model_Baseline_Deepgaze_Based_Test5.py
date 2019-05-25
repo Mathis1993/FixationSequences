@@ -73,7 +73,7 @@ class Smoothing(nn.Module):
         self.conv = nn.Conv2d(1, 1, 3, bias=False, padding=1)
         self.gpu = gpu
         self.conv.weight = torch.nn.Parameter(gaussian_map(torch.rand(3,3), 1, 1, self.gpu).view(1,1,3,3), requires_grad=False)
-        print(self.conv.weight.size())
+        #print(self.conv.weight.size())
 
 
     def forward(self, x):
@@ -126,7 +126,7 @@ class Test5Net(nn.Module):
         x = self.cb(x)
         #flattening
         x = x.view(-1)
-        x = functional.softmax(x)
+        x = functional.softmax(x, dim=0)
         #print("input sum after Smoothing: {}".format(torch.sum(x)))
         #softmax to obtain probability distribution
         #x = nn.Softmax(2)(x.view(*x.size()[:2], -1)).view_as(x)

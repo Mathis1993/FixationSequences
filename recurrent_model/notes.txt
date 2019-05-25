@@ -9,3 +9,16 @@ Oder: Baselinemodel nehmen (VGG und Readout Network) und darauf LSTM/GRU setzen?
 --> Baselinemodel vortrainiert laden und Parameter freezen, vllt. dann genügend memory?
 
 DeepgazeII-Saliency-Map and then RNN?
+
+----------------------------------
+
+nicht one-hot encoded, sondern direkt x- und y-Koordinate vorhersagen
+kein teacher forcing
+
+- vllt iwie batches hinbekommen, damit Lernkurve glatter wird?
+- Durchlauf durch das CNN in das Erstellen des Datasets schieben? Oder eine Netzwerkklasse mit CNN und RNN? Aber würde dann das zusammenschustern des RNN-Inputs aus dem CNN-Output den backward-call stören?
+
+- LSTM und GRU-Version - done
+- Unnötige Version(en) löschen - done
+- Training Loop vllt dann eine Datei für alle Modellarten mgl.? - done
+- Wenn alles angepasst, pushen

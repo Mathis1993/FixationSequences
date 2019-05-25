@@ -168,67 +168,23 @@ class NormalizeTargets(object):
 class SequenceModeling(object):
     """
     After ToTensor() and Downsampling(), data is prepared to be fed into a RNN:
-    - Input for each time step: A matrix of eg 8 x 10002 for the case of 7 fixations and a resolution of 100x100 pixels 
-    (plus a start-of-sequence-token). So rows: sos, fixation and the last one is eos. Columns are one-hot encoding
-    of the point in the flattened image that was fixated (or if it's sos or eos).
-    - Targets: Indices of fixations in the flattened image and then the eos to give over to NLLLoss().
-    NOTE: Inputs are               sos-fix1-fix2-fix3
-          Targets are indices of   fix1-fix2-fix3-eos  so that from each input t, t+1 is predicted
-    - Image: Returned flattened
-    NOTE: The RNNs available in Pytorch expect only one sequential input (not image and a sequential input), so the sequential
-    input for every time step (each fixation) is bound together with the image data.
+    - Add state targets (state is (1,0,0) for start, (0,1,0) for end and (0,0,1) for during sequence) for each image's fixations
+    - state predictions and state targets will be fed into CrossEntropyLoss, so the state targets should contain the index of the correct value (of the correct category) for every time step
+    - cast fixations to float, as MSELoss seems to expect that
     """
-    
-    def index_2d_to_index_fl(self, tensor_size, index_2d):
-        """
-        Takes 2D-Tensor-Size and the index (as a tensor) of one if its entries.
-        Returns the index of this entry for the flattened version of the 2D-Tensor.
-        """
-    
-        n_cols = tensor_size[-1]
-        idx_row, idx_col = tuple(index_2d)
-        #extract values from tensors
-        idx_row = idx_row.item()
-        idx_col = idx_col.item()
-
-        return idx_row * n_cols + idx_col
     
     def __call__(self, sample):
         image, fixations = sample['image'], sample['fixations']
         
         #3,100,100 | 7,2
         
-        #TIME-STEP-INPUTS: SOS and Fixations
-        n_classes = image.size(-2) * image.size(-1) + 2 #plus sos- and eos-token; so here 10002
-
-        inputs = torch.zeros(fixations.size(0)+1, n_classes) #0 is number of fixations, 1 is fixations
-
-        #start-of-sequence-token
-        inputs[0,0] = 1
-
-        #fixations
-        idx_new_targets = []
-        for i in range(fixations.size(0)):
-            idx_new_target = self.index_2d_to_index_fl(image.size(), fixations[i])
-            idx_new_targets.append(idx_new_target)
-            inputs[i+1, idx_new_target+1] = 1
+        #fixaations to float
+        fixations = fixations.float()
         
+        #state is (1,0,0) for start, (0,1,0) for end and (0,0,1) for during sequence
+        #so for the start the index of the correct value is 0, for the end 1 and for during 2
+        state_target = torch.ones(fixations.size(0), dtype=torch.long)
+        state_target[0] = 0
+        state_target[-1] = 2
         
-        #TARGETS: Fixations and EOS
-        #As WE USE nn.NLLLOSS(), only the INDEX of the target at each time step is needed, not a whole one-hot-vector
-        #We have the indices of the fixations already, now add index of eos-token
-        idx_new_targets.append(n_classes - 1)
-
-        #list2tensor
-        new_targets = torch.LongTensor(idx_new_targets)
-        
-        
-        #IMAGE
-        image_fl = image.view(-1)
-            
-        #COMBINE IMAGE AND TIME STEP INPUTS
-        inputs_combined = torch.empty(inputs.size(0), inputs.size(1) + image_fl.size(0))
-        for i in range(inputs.size(0)):
-            inputs_combined[i] = torch.cat((image_fl, inputs[i]),0)
-        
-        return {"image": image, "image_fl": image_fl, "inputs": inputs, "inputs_combined": inputs_combined, "targets": new_targets}
+        return {"image": image, "fixations": fixations, "states": state_target}
