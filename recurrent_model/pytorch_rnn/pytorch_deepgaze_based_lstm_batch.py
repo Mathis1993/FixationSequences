@@ -88,7 +88,7 @@ def run_lstm(lr, n_epochs, gpu):
     plotter_eval = VisdomLinePlotter(env_name='evaluation', server="http://130.63.188.108", port=9876)
 
     # early stopping patience; how long to wait after last time validation loss improved.
-    patience = 5
+    patience = 10
 
     #Start Training
     model, train_loss, valid_loss = train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu, plotter_train, plotter_eval, train_loader, val_loader, optimizer, criterion_fixations, criterion_state, lr)
