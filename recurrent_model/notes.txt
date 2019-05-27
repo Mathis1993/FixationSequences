@@ -21,4 +21,7 @@ kein teacher forcing
 - LSTM und GRU-Version - done
 - Unnötige Version(en) löschen - done
 - Training Loop vllt dann eine Datei für alle Modellarten mgl.? - done
-- Wenn alles angepasst, pushen
+- Wenn alles angepasst, pushen - done
+
+- Batches: Padding sequence with 0s, then train until eos token
+- Parameter für coordinates und token prediction alternatingly updaten 
