@@ -61,7 +61,7 @@ def train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu,
             #CrossEntropyLoss with RNN: output should be 
             #[1, number_of_classes, seq_length], while your target should be [1, seq_length].
             #https://discuss.pytorch.org/t/pytorch-lstm-target-dimension-in-calculating-cross-entropy-loss/30398
-            #so switch axes from (1,6,10000 to 1,10000,6) (assuming a context vector with 10000 entries)
+            #so switch axes from (1,6,10000 to 1,10000,6) (assuming a output vector with 10000 entries)
             out_state = out_state.permute(0,2,1)
             
             loss_fixations = criterion_fixations(out_fix, fixations)
