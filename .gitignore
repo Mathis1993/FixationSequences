@@ -3,4 +3,4 @@
 *.pyc
 *.ipynb_checkpoints/
 *__pycache__*
-recurrent_model/pytorch_rnn/results/
+recurrent_model/pytorch_rnn/results/*.pt
