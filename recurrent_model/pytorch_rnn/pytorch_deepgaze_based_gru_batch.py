@@ -25,7 +25,7 @@ from utils.Train_Model_DEEPGAZE_BASED import train_model
 from utils.MyVisdom import VisdomLinePlotter
 from utils.Model_Baseline_Deepgaze_Based_Test5 import Test5Net
 
-def run_gru(batch_size, lr, n_epochs, gpu):
+def run_gru(batch_size, lr, n_epochs, gpu, hidden_size):
 
     #Create datasets
     train_loader, val_loader, test_loader = create_datasets(batch_size=batch_size, data_transform=transforms.Compose([ToTensor(), Downsampling(10), SequenceModeling()]))
@@ -40,7 +40,7 @@ def run_gru(batch_size, lr, n_epochs, gpu):
     #Recurrent Model
     #nur x-y-Kodierung (10002, Bild und x plus y) Verständnis von Distanz für das Modell
     input_size = 10000 #CNN context vector (eg 100x100, so flattened out 10000)
-    hidden_size = 20 #vllt eher 10-50 Dimensionen
+    #hidden_size = 20 #vllt eher 10-50 Dimensionen now set via function call
 
     class MyRNN(nn.Module):
         def __init__(self, input_size, hidden_size, gpu):
