@@ -9,7 +9,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR, StepLR
 from torchvision import transforms
 import torchvision
-
+import torch.nn.utils.rnn as rnn_utils
 
 import pandas as pd
 import math
@@ -25,10 +25,10 @@ from utils.Train_Model_DEEPGAZE_BASED import train_model
 from utils.MyVisdom import VisdomLinePlotter
 from utils.Model_Baseline_Deepgaze_Based_Test5 import Test5Net
 
-def run_lstm(lr, n_epochs, gpu):
+def run_lstm(batch_size, lr, n_epochs, gpu):
 
     #Create datasets
-    train_loader, val_loader, test_loader = create_datasets(batch_size=1, data_transform=transforms.Compose([ToTensor(), Downsampling(10), SequenceModeling()]))
+    train_loader, val_loader, test_loader = create_datasets(batch_size=batch_size, data_transform=transforms.Compose([ToTensor(), Downsampling(10), SequenceModeling()]))
 
     #Baselinmodel; deepgazeII-based, Test 5
     #initilaize a baseline-model instance
@@ -54,10 +54,14 @@ def run_lstm(lr, n_epochs, gpu):
                     device = torch.device("cuda")
                     self.cuda()
 
-        def forward(self, inputs):
-            output, (hidden, cell) = self.rec_layer(inputs)
-            out_fix = self.fc_fix(output)
-            out_state = self.fc_state(output)
+        def forward(self, inputs, length):
+            #pack batch so that the rnn only sees not-padded inputs
+            packed_inputs = rnn_utils.pack_padded_sequence(input=inputs, lengths=length, batch_first=True)
+            output, (hidden, cell) = self.rec_layer(packed_inputs)
+            #unpack (reverse operation)
+            unpacked_output, _ = rnn_utils.pad_packed_sequence(output, batch_first=True, padding_value=-1)
+            out_fix = self.fc_fix(unpacked_output)
+            out_state = self.fc_state(unpacked_output)
             return out_fix, out_state
 
     rnn_model = MyRNN(input_size=input_size, hidden_size=hidden_size, gpu=gpu) #lstm, gru
@@ -70,7 +74,7 @@ def run_lstm(lr, n_epochs, gpu):
 
     #Loss-Functions
     criterion_fixations = nn.MSELoss()
-    criterion_state = nn.CrossEntropyLoss()
+    criterion_state = nn.CrossEntropyLoss(ignore_index=-1)
 
     #load df to store results in
     results = pd.read_csv("results/results.csv")

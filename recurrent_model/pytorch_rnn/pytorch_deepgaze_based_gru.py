@@ -3,16 +3,17 @@
 """
 Train RNN as available in Pytorch.
 
-Usage: pytorch_rnn.py <lr> <n_epochs> <gpu>
+Usage: pytorch_rnn.py <batch_size> <lr> <n_epochs> <gpu>
 
 Arguments:
-1. lr (float): Learning rate used in SGD.
-2. n_epochs (int): Amount of iterations over the training/validation dataset.
-3. gpu (bool): If to run on GPU (if available).
+1. batch_size (int)
+2. lr (float): Learning rate used in SGD.
+3. n_epochs (int): Amount of iterations over the training/validation dataset.
+4. gpu (bool): If to run on GPU (if available).
 (Batch size does not appear as an argument as it has to be 1 due to different lengths of fixation sequences)
 
 Examples:
-pytorch_rnn.py 0.0001 20 True
+pytorch_deepgaze_based_gru.py 16 0.0001 20 True
 
 """
 
@@ -26,9 +27,10 @@ if __name__ == '__main__':
 
     
 #set extract arguments given on calling the script from the command line        
-lr = float(sys.argv[1])
-n_epochs = int(sys.argv[2])
-gpu = bool(sys.argv[3])
+batch_size = int(sys.argv[1])
+lr = float(sys.argv[2])
+n_epochs = int(sys.argv[3])
+gpu = bool(sys.argv[4])
 
     
 
@@ -40,6 +42,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR, StepLR
 from torchvision import transforms
 import torchvision
+import torch.nn.utils.rnn as rnn_utils
 
 
 import pandas as pd
@@ -57,7 +60,7 @@ from utils.MyVisdom import VisdomLinePlotter
 from utils.Model_Baseline_Deepgaze_Based_Test5 import Test5Net
 
 #Create datasets
-train_loader, val_loader, test_loader = create_datasets(batch_size=1, data_transform=transforms.Compose([ToTensor(), Downsampling(10), SequenceModeling()]))
+train_loader, val_loader, test_loader = create_datasets(batch_size=batch_size, data_transform=transforms.Compose([ToTensor(), Downsampling(10), SequenceModeling()]))
 
 #Baselinmodel; deepgazeII-based, Test 5
 #initilaize a baseline-model instance
@@ -83,10 +86,14 @@ class MyRNN(nn.Module):
                 device = torch.device("cuda")
                 self.cuda()
                 
-    def forward(self, inputs):
-        output, hidden = self.rec_layer(inputs)
-        out_fix = self.fc_fix(output)
-        out_state = self.fc_state(output)
+    def forward(self, inputs, length):
+        #pack batch so that the rnn only sees not-padded inputs
+        packed_inputs = rnn_utils.pack_padded_sequence(input=inputs, lengths=length, batch_first=True)
+        output, hidden = self.rec_layer(packed_inputs)
+        #unpack (reverse operation)
+        unpacked_output, _ = rnn_utils.pad_packed_sequence(output, batch_first=True, padding_value=-1)
+        out_fix = self.fc_fix(unpacked_output)
+        out_state = self.fc_state(unpacked_output)
         return out_fix, out_state
 
 rnn_model = MyRNN(input_size=input_size, hidden_size=hidden_size, gpu=gpu) #lstm, gru
@@ -99,7 +106,7 @@ optimizer = optim.Adam(rnn_model.parameters(), lr=lr)
 
 #Loss-Functions
 criterion_fixations = nn.MSELoss()
-criterion_state = nn.CrossEntropyLoss()
+criterion_state = nn.CrossEntropyLoss(ignore_index=-1)
 
 #load df to store results in
 results = pd.read_csv("results/results.csv")

@@ -171,6 +171,8 @@ class SequenceModeling(object):
     - Add state targets (state is (1,0,0) for start, (0,1,0) for end and (0,0,1) for during sequence) for each image's fixations
     - state predictions and state targets will be fed into CrossEntropyLoss, so the state targets should contain the index of the correct value (of the correct category) for every time step
     - cast fixations to float, as MSELoss seems to expect that
+    - pad fixations with -1s to length of 15 (max length in training data is 12), to be able to use batch sizes bigger than one. The padded batch will be fed to the rnn using "pack_padded_sequence"
+    - also pad token indices with -1s
     """
     
     def __call__(self, sample):
@@ -178,13 +180,26 @@ class SequenceModeling(object):
         
         #3,100,100 | 7,2
         
-        #fixaations to float
+        #fixations to float
         fixations = fixations.float()
+        
+        #Pad fixations matrix with zeros, so that we can generate batches of > 1. The padded sequences of one batch are later
+        #packed using pack_padded_sequence so that the can be fed to a rnn with the rnn ignoring the padded stuff.
+        #Maximum fixation length in training data is 12. Make it to 15 just to be sure.
+        after_pad_length = 15
+        actual_size = fixations.size(0)
+        pad_amount = after_pad_length - actual_size
+        fixations = functional.pad(fixations, (0,0,0,pad_amount), mode='constant', value=-1)
+        #Also keep track of the actual length of each fixation sequence
+        fixations_l = torch.Tensor([actual_size])
         
         #state is (1,0,0) for start, (0,1,0) for end and (0,0,1) for during sequence
         #so for the start the index of the correct value is 0, for the end 1 and for during 2
-        state_target = torch.ones(fixations.size(0), dtype=torch.long)
+        #invalid (padded) values are here not 0 but -1
+        state_target = torch.ones(fixations.size(0), dtype=torch.long) * -1 #fixations.size(0) is now 15
         state_target[0] = 0
-        state_target[-1] = 2
+        for i in range(1, actual_size-1):
+            state_target[i] = 1
+        state_target[actual_size-1] = 2
         
-        return {"image": image, "fixations": fixations, "states": state_target}
+        return {"image": image, "fixations": fixations, "fixations_length":fixations_l, "states": state_target}

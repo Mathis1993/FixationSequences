@@ -125,8 +125,8 @@ class Test5Net(nn.Module):
         x = self.smooth(x)
         x = self.cb(x)
         #flattening
-        x = x.view(-1)
-        x = functional.softmax(x, dim=0)
+        x = x.view(x.size(0),-1)
+        x = functional.softmax(x, dim=1)
         #print("input sum after Smoothing: {}".format(torch.sum(x)))
         #softmax to obtain probability distribution
         #x = nn.Softmax(2)(x.view(*x.size()[:2], -1)).view_as(x)
