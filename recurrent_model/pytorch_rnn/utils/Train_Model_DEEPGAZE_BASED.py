@@ -57,9 +57,10 @@ def train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu,
             #Da der Input immer derselbe Kontextvektor ist, macht es nichts, wenn die Targets umsortiert werden
             
             #move images through baseline model
-            context_vector = baseline_model(image)
+            with torch.no_grad():
+                context_vector = baseline_model(image)
             
-            #make sure, the context vector is flattened out into one dimension (and batch-dimension)
+            #make sure the context vector is flattened out into one dimension (and batch-dimension)
             context_vector = context_vector.view(context_vector.size(0), -1)
             
             #no teacher forcing, just feed the context vector to the RNN for every time step
