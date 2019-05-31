@@ -65,7 +65,7 @@ class MyRNN(nn.Module):
 
 #load trained parameters
 rnn_model = MyRNN(input_size=input_size, hidden_size=hidden_size, gpu=gpu)
-name = "checkpoint_id_15_lr_1e-05.pt"
+name = "checkpoint_id_44_lr_0.001.pt" #weighted loss
 rnn_model.load_state_dict(torch.load("results/" + name))
 
 ##################  
