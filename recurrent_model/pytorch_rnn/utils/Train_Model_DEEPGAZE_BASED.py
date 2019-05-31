@@ -189,7 +189,8 @@ def train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu,
             #Calcuale losses
             loss_fixations = criterion_fixations(masked_out_fix, masked_fixations)
             loss_state = criterion_state(out_state, states)
-            loss_total = loss_fixations + loss_state
+            #put more weight on fixation coordinate loss
+            loss_total = (3*loss_fixations) + loss_state
 
             # record validation loss
             valid_losses.append(loss_total.item())
