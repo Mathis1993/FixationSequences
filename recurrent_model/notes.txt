@@ -25,3 +25,8 @@ kein teacher forcing
 
 - Batches: Padding sequence with 0s, then train until eos token
 - Parameter für coordinates und token prediction alternatingly updaten 
+
+-------------------------------------
+
+- look at predictions made with weighted loss
+- overfit on training data and see how predictions are
