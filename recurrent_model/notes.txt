@@ -47,3 +47,9 @@ Und für letzte das label letzte Fixation vorhersagen
 
 Also: Context Vector + x-y-Koordinate der letzten Fixation + Label erste/mittendrin/letzte
 und als ersten Input Center für x-y-Koordinate
+
+--------------------------------------
+Zukunft:
+
+- nur die jeweils nächste Fixation vorhersagen (Datensatz splitten in einzelne Fixationen, mit jeweils nächster als Target)?
+- Datensatz aus dem paper von Schuett et al. benutzen?
