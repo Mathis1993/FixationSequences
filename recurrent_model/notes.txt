@@ -30,3 +30,20 @@ kein teacher forcing
 
 - look at predictions made with weighted loss
 - overfit on training data and see how predictions are (while only using coordinate loss and no token prediction)
+
+- Teacher Forcing als Pretraining (oder nur damit)
+
+--------------------------------------
+Tokens separat als Labels
+
+Center als Start of Sequence Location
+Fixieren Leute am Anfang das Center? Paper zu Datensatz
+
+Vorletzte Fixation als letzter Input
+
+Und für letzte das label letzte Fixation vorhersagen
+--> erste/mittendrin/letzte als Label mit vorhersagen
+
+
+Also: Context Vector + x-y-Koordinate der letzten Fixation + Label erste/mittendrin/letzte
+und als ersten Input Center für x-y-Koordinate
