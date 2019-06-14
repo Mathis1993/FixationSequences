@@ -13,15 +13,40 @@ training_id,n_epochs,learning_rate,mean_train_loss,mean_validation_loss
 11,10,1e-06,2533.4136790981875,2512.026035985255 baseline deepgaze test5 gru
 12,40,5e-05,293.15626670688175,266.6635699338459 baseline deepgaze test5 lstm
 13,40,5e-05,275.3437459460032,249.41327887877614 baseline deepgaze test5 gru
-14,40,1e-05,478.93160382810333,447.2712201668264  baseline deepgaze test5 lstm converged min loss 249
+14,40,1e-05,478.9316038281033,447.2712201668264  baseline deepgaze test5 lstm converged min loss 249
 15,40,1e-05,449.6850534400252,418.6914941634621  baseline deepgaze test5 gru converged min loss 233
 16,10,0.1,249.4855635492896,247.85473553257742  baseline deepgaze test5 lstm batch_size 8
 17,10,0.01,255.4168676686781,246.56473261165402 baseline deepgaze test5 lstm batch_size 8
 18,10,0.001,320.05381761973763,252.94448327593835 baseline deepgaze test5 lstm batch_size 8
 19,10,0.0001,900.5211741138925,783.1537876209553 baseline deepgaze test5 lstm batch_size 8 converging min loss 260
-20,10,1e-05,2425.9804470463396,2398.5265074968897 baseline deepgaze test5 lstm batch_size 8
+20,10,1e-05,2425.98044704634,2398.5265074968897 baseline deepgaze test5 lstm batch_size 8
 21,10,0.1,250.4071100100845,247.00353727854386 baseline deepgaze test5 lstm batch_size 16
 22,10,0.01,264.9468481887848,249.07043602293493 baseline deepgaze test5 lstm batch_size 16
 23,10,0.001,393.1819328875328,299.20726665344955 baseline deepgaze test5 lstm batch_size 16 lr scheinbar etwas zu hoch
 24,10,0.0001,1435.8786391200113,1331.8356149570725 baseline deepgaze test5 lstm batch_size 16 lr scheinbar etwas zu niedrig
-25,10,0.0001,885.4986787424259,766.924727883886
+25,10,0.0001,885.4986787424257,766.924727883886 baseline deepgaze test5 gru batch_size 8 beginning to converge min loss 245
+26,10,0.0005,506.7308443277695,399.2192769285108 baseline deepgaze test5 gru batch_size 16 converging aber kantig lr etwas hoch
+27,15,0.0001,1107.7700901901064,1027.718326562052 baseline deepgaze test5 lstm batch_size 8 hidden_units 10 min loss 278 vllt noch etwas laenger trainieren lassen beginning to converge
+28,15,0.0001,1033.7866064401683,953.9538477514238 baseline deepgaze test5 gru batch_size 8 hidden_units 10 min loss 253 vllt noch etwas laenger trainieren lassen beginning to converge
+29,15,0.0001,555.872688704821,477.2820167976278 baseline deepgaze test5 lstm batch_size 8 hidden_units 30 min loss 246 converging aber vllt auch noch etwas laenger trainieren lassen
+30,15,0.0001,527.2663621960806,451.31389344116377 baseline deepgaze test5 gru batch_size 8 hidden_units 30 min loss 245 converged ganz leich kantig
+31,15,0.0001,437.8716332791825,365.08423425375156 baseline deepgaze test5 lstm batch_size 8 hidden_units 50 min loss 245 converged ganz leicht kantig
+32,15,0.0001,422.73371979223083,350.0076242543682 baseline deepgaze test5 gru batch_size 8 hidden_units 50 min loss 245 converged ganz leicht kantig
+33,3,0.0001,1888.8136801492906,1646.9104778399978 vgg lstm batch_size 8 first test
+34,3,0.001,514.9390809335301,271.4249432822115 vgg lstm batch_size 8 second test
+35,10,0.0005,403.14570542225,307.80616466289933 vgg lstm batch_size 8 third test min loss 257 converging basically after 2 iterations
+36,10,0.0005,401.26164786229583,302.7722731288758 vgg gru batch_size 8 min loss 246 converging basically after 2 iterations
+37,5,0.01,274.4767869104895,246.10192474079358 baseline deepgaze test5 gru batch_size 16 torch.no_grad() around baseline min loss 246 FROM HERE ALWAYS torch.no_grad() around baseline
+38,5,0.2,251.93008994672886,250.4947273736815
+39,5,0.05,238.9155415571529,238.1091306134039
+40,50,0.1,248.9218474244145,248.0385039600667
+41,50,0.1,249.12539076287084,247.96962692475154
+42,20,0.05,238.62166149417843,237.68728949635369 baseline deepgaze test5 gru batch_size 1
+43,5,0.0001,1974.192705444417,5505.360863743231 baseline deepgaze test5 gru batch_size 16 3*weight to coordinate loss
+44,5,0.001,509.2711316721279,976.6324708889463 baseline deepgaze test5 gru batch_size 16 3*weight to coordinate loss
+45,5,0.0001,1956.8162459233586,1812.0617065674974
+46,6,0.001,464.9394842242789,311.9775583190986
+47,1,0.001,1552.1550973839828,662.9807058591134
+48,5,0.001,603.9788924588346,379.1834211815785
+49,5,0.01,280.25258773323355,246.53895441605908
+50,5,0.1,251.65974007240493,247.43585894636394
