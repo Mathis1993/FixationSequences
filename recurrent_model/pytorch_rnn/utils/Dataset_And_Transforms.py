@@ -202,4 +202,7 @@ class SequenceModeling(object):
             state_target[i] = 1
         state_target[actual_size-1] = 2
         
-        return {"image": image, "fixations": fixations, "fixations_length":fixations_l, "states": state_target}
+        #fixation inputs for teacher forcing: add (50,50) (center) for the first time step input
+        fix_tf = torch.cat((torch.Tensor([[50,50]]), fixations), 0)
+        
+        return {"image": image, "fixations": fixations, "fixations_length":fixations_l, "states": state_target, "fixations_tf": fix_tf}

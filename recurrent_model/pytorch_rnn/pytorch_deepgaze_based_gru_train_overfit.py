@@ -71,7 +71,7 @@ baseline_model.load_state_dict(torch.load("results/" + name))
 
 #Recurrent Model
 #nur x-y-Kodierung (10002, Bild und x plus y) Verständnis von Distanz für das Modell
-input_size = 10000 #CNN context vector (eg 100x100, so flattened out 10000)
+input_size = 10002 #CNN context vector (eg 100x100, so flattened out 10000) and fixation coordinates of previous time step
 hidden_size = 20 #vllt eher 10-50 Dimensionen
 
 class MyRNN(nn.Module):

@@ -33,6 +33,7 @@ def train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu,
             image = example["image"]
             fixations = example["fixations"]
             length = example["fixations_length"]
+            fix_tf = example["fixations_tf"]
             
             #push data and targets to gpu
             if gpu:
@@ -40,6 +41,7 @@ def train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu,
                     image = image.to('cuda')
                     fixations = fixations.to('cuda')
                     length = length.to('cuda')
+                    fix_tf = fix_tf.to('cuda')
                     
             #zero out gradients (to prevent them from accumulating)
             optimizer.zero_grad()
@@ -60,13 +62,14 @@ def train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu,
             #make sure the context vector is flattened out into one dimension (and batch-dimension)
             context_vector = context_vector.view(context_vector.size(0), -1)
             
-            #no teacher forcing, just feed the context vector to the RNN for every time step
-            #batch-dimension, time step dimension (number of fixations), context vector dimension
+            ##combine image and fixation data for teacher forcing
+            #batch-dimension, time step dimension (number of fixations), context vector and previous fixation dimension
                                                 #so that all dims are in int
-            context_vectors_steps = torch.empty(fixations.size(0), int(max(length).item()), context_vector.size(1), device='cuda:0') 
+            context_vectors_steps = torch.empty(fixations.size(0), int(max(length).item()), context_vector.size(1) + 2, device='cuda:0') #plus 2 for previous x- and y-coordinate
             for j in range(fixations.size(0)): #over batch-dimension
                 for k in range(int(max(length).item())): #and through rows
-                    context_vectors_steps[j,k] = context_vector[j] #make every row to be the context vector
+                    #last time step is not given as input as fix_tf has one more row than the max(length)
+                    context_vectors_steps[j,k] = torch.cat((context_vector[j], fix_tf[j,k]), 0) #make every row to be the context vector
             
             #feed context vector (the same for each time step) to rnn (hidden is initialized automatically)
             out_fix = rnn_model(context_vectors_steps, length_s)
@@ -109,6 +112,7 @@ def train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu,
             image = example["image"]
             fixations = example["fixations"]
             length = example["fixations_length"]
+            fix_tf = example["fixations_tf"]
             
             #push data and targets to gpu
             if gpu:
@@ -116,6 +120,7 @@ def train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu,
                     image = image.to('cuda')
                     fixations = fixations.to('cuda')
                     length = length.to('cuda')
+                    fix_tf = fix_tf.to('cuda')
             
             #Sort the sequence lengths in descending order, keep track of the old indices, as the fixations' and token-indices'
             #batch-dimension needs to be rearranged in that way
@@ -130,16 +135,17 @@ def train_model(baseline_model, rnn_model, training_id, patience, n_epochs, gpu,
             with torch.no_grad():
                 context_vector = baseline_model(image)
             
-            #make sure, the context vector is flattened out into one dimension (and batch-dimension)
+            #make sure the context vector is flattened out into one dimension (and batch-dimension)
             context_vector = context_vector.view(context_vector.size(0), -1)
             
-            #no teacher forcing, just feed the context vector to the RNN for every time step
-            #batch-dimension, time step dimension (number of fixations), context vector dimension
+            ##combine image and fixation data for teacher forcing
+            #batch-dimension, time step dimension (number of fixations), context vector and previous fixation dimension
                                                 #so that all dims are in int
-            context_vectors_steps = torch.empty(fixations.size(0), int(max(length).item()), context_vector.size(1), device='cuda:0') 
+            context_vectors_steps = torch.empty(fixations.size(0), int(max(length).item()), context_vector.size(1) + 2, device='cuda:0') #plus 2 for previous x- and y-coordinate
             for j in range(fixations.size(0)): #over batch-dimension
                 for k in range(int(max(length).item())): #and through rows
-                    context_vectors_steps[j,k] = context_vector[j] #make every row to be the context vector
+                    #last time step is not given as input as fix_tf has one more row than the max(length)
+                    context_vectors_steps[j,k] = torch.cat((context_vector[j], fix_tf[j,k]), 0) #make every row to be the context vector
             
             #feed context vector (the same for each time step) to rnn (hidden is initialized automatically)
             out_fix = rnn_model(context_vectors_steps, length_s)
