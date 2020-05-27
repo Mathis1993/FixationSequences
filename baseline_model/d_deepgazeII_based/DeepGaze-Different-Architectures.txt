@@ -1,0 +1,9 @@
+emptyresults
+
+Test1: only readout network without CB or Smoothing
+Test2: readout network with CB and smoothing
+Test3: readout network with CB
+Test4: readout network with smoothing
+Test5: readout network with smoothing and CB
+
+all on different lr

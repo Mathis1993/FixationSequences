@@ -1,0 +1,2 @@
+checkpoint_batch_size_8_lr_0.0001.pt
+loss_plot_batch_size_8_lr_0.0001.png

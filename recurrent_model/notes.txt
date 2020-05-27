@@ -1,0 +1,55 @@
+Last Layer LogSoftmax and then just NLLLoss?
+--> Nein, einfach direkt CrossEntropyLoss
+
+Bilder auf 10x10 runterskalieren, bzw. Vorhersage nur in 10x10 Grid (Vorherzusagen, welche grid cell von 100 insgesamt wann fixiert wird, wäre ja auch schon was)? (Vor allem, weil nicht genug memory für LSTM)
+
+Oder: Bilder so groß wie mgl. durch VGG, dann am Ende auf 10x10 runter, sodass wir 10x10 Saliency Map (bzw. density) erhalten. Das dann zusammen mit einer fixation location pro time step in LSTM --> Outputs aus VGG zwischenspeichern?!
+
+Oder: Baselinemodel nehmen (VGG und Readout Network) und darauf LSTM/GRU setzen?
+--> Baselinemodel vortrainiert laden und Parameter freezen, vllt. dann genügend memory?
+
+DeepgazeII-Saliency-Map and then RNN?
+
+----------------------------------
+
+nicht one-hot encoded, sondern direkt x- und y-Koordinate vorhersagen
+kein teacher forcing
+
+- vllt iwie batches hinbekommen, damit Lernkurve glatter wird?
+- Durchlauf durch das CNN in das Erstellen des Datasets schieben? Oder eine Netzwerkklasse mit CNN und RNN? Aber würde dann das zusammenschustern des RNN-Inputs aus dem CNN-Output den backward-call stören?
+
+- LSTM und GRU-Version - done
+- Unnötige Version(en) löschen - done
+- Training Loop vllt dann eine Datei für alle Modellarten mgl.? - done
+- Wenn alles angepasst, pushen - done
+
+- Batches: Padding sequence with 0s, then train until eos token
+- Parameter für coordinates und token prediction alternatingly updaten 
+
+-------------------------------------
+
+- look at predictions made with weighted loss
+- overfit on training data and see how predictions are (while only using coordinate loss and no token prediction)
+
+- Teacher Forcing als Pretraining (oder nur damit)
+
+--------------------------------------
+Tokens separat als Labels
+
+Center als Start of Sequence Location
+Fixieren Leute am Anfang das Center? Paper zu Datensatz
+
+Vorletzte Fixation als letzter Input
+
+Und für letzte das label letzte Fixation vorhersagen
+--> erste/mittendrin/letzte als Label mit vorhersagen
+
+
+Also: Context Vector + x-y-Koordinate der letzten Fixation + Label erste/mittendrin/letzte
+und als ersten Input Center für x-y-Koordinate
+
+--------------------------------------
+Zukunft:
+
+- nur die jeweils nächste Fixation vorhersagen (Datensatz splitten in einzelne Fixationen, mit jeweils nächster als Target)?
+- Datensatz aus dem paper von Schuett et al. benutzen?
